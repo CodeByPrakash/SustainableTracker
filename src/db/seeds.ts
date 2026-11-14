@@ -270,6 +270,52 @@ export async function seedDatabase(db: SQLiteDatabase): Promise<void> {
       await db.runAsync("UPDATE topics SET status = 'not_started'");
       await db.runAsync("INSERT OR REPLACE INTO settings (key, value) VALUES ('topics_cleaned_demo_data', 'true')");
     }
+
+    // Self-healing: ensure Saturday (6) blocks exist if missing
+    const satCount = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM schedule_blocks WHERE day_of_week = 6 AND is_recurring = 1'
+    );
+    if (!satCount || satCount.count === 0) {
+      for (const block of SATURDAY_SCHEDULE_BLOCKS) {
+        await db.runAsync(
+          `INSERT INTO schedule_blocks (id, title, start_time, end_time, category, day_of_week, is_recurring, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+          [uuid(), block.title, block.startTime, block.endTime, block.category, 6, block.sortOrder]
+        );
+      }
+    }
+
+    // Self-healing: ensure Sunday (7) blocks exist if missing
+    const sunCount = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM schedule_blocks WHERE day_of_week = 7 AND is_recurring = 1'
+    );
+    if (!sunCount || sunCount.count === 0) {
+      for (const block of SUNDAY_SCHEDULE_BLOCKS) {
+        await db.runAsync(
+          `INSERT INTO schedule_blocks (id, title, start_time, end_time, category, day_of_week, is_recurring, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+          [uuid(), block.title, block.startTime, block.endTime, block.category, 7, block.sortOrder]
+        );
+      }
+    }
+
+    // Self-healing: ensure Mon-Fri blocks exist if missing
+    for (let dow = 1; dow <= 5; dow++) {
+      const dowCount = await db.getFirstAsync<{ count: number }>(
+        'SELECT COUNT(*) as count FROM schedule_blocks WHERE day_of_week = ? AND is_recurring = 1',
+        [dow]
+      );
+      if (!dowCount || dowCount.count === 0) {
+        for (const block of WEEKDAY_SCHEDULE_BLOCKS) {
+          await db.runAsync(
+            `INSERT INTO schedule_blocks (id, title, start_time, end_time, category, day_of_week, is_recurring, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+            [uuid(), block.title, block.startTime, block.endTime, block.category, dow, block.sortOrder]
+          );
+        }
+      }
+    }
+
     return;
   }
 

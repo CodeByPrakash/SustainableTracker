@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme, Typography, Spacing, Radius } from '../../src/theme';
 import { getDatabase } from '../../src/db/database';
+import { seedDatabase } from '../../src/db/seeds';
 import { getScheduleForDate, updateBlockStatus, checkAndAutoResetWeeklySchedule, ScheduleBlock } from '../../src/db/queries/scheduleQueries';
 import { getActiveHabits, getHabitLogsForDate, toggleHabitLog, Habit, HabitLog } from '../../src/db/queries/habitQueries';
 import { getWaterForDate, logWater } from '../../src/db/queries/healthQueries';
@@ -63,12 +64,18 @@ export default function HomeScreen() {
         console.warn('Auto reset warning:', e);
       }
 
-      const [schedData, habitData, logsData, waterData] = await Promise.all([
+      let [schedData, habitData, logsData, waterData] = await Promise.all([
         getScheduleForDate(db, todayStr),
         getActiveHabits(db),
         getHabitLogsForDate(db, todayStr),
         getWaterForDate(db, todayStr),
       ]);
+
+      // If today's schedule is empty (e.g. initial run on weekend or missing day seed), heal and re-query
+      if (schedData.length === 0) {
+        await seedDatabase(db);
+        schedData = await getScheduleForDate(db, todayStr);
+      }
       setSchedule(schedData);
       setHabits(habitData);
       setHabitLogs(logsData);

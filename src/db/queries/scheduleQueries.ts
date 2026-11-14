@@ -68,9 +68,12 @@ export async function getScheduleForDate(
   db: SQLiteDatabase,
   date: string
 ): Promise<ScheduleBlock[]> {
-  // Derive day-of-week from the date (JS: 0=Sun … 6=Sat → seed: 1=Mon … 7=Sun)
-  const d = new Date(date);
-  const jsDow = d.getUTCDay(); // 0=Sun
+  // Derive day-of-week safely without timezone shift
+  const parts = date.split('-').map(Number);
+  const targetDate = parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])
+    ? new Date(parts[0], parts[1] - 1, parts[2])
+    : new Date(date);
+  const jsDow = targetDate.getDay(); // 0=Sun … 6=Sat
   const seedDow = jsDow === 0 ? 7 : jsDow; // 1=Mon … 7=Sun
 
   return db.getAllAsync<ScheduleBlock>(
