@@ -35,9 +35,21 @@
         {
           "icon": "./assets/icon.png",
           "color": "#E87935",
-          "sounds": ["./assets/sounds/daycraft_chime.wav"]
+          "sounds": [
+            "./assets/sounds/daycraft_chime.wav"
+          ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "58a48a36-d468-425d-ac77-cddef772c9d5"
+      }
+    }
   }
 }
