@@ -8,7 +8,7 @@ Thank you for your interest in improving DAYCRAFT! Whether you are fixing a bug,
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/daycraft.git
+   git clone https://github.com/CodeByPrakash/SustainableTracker.git
    cd daycraft
    ```
 
