@@ -5,19 +5,18 @@ import * as Haptics from 'expo-haptics';
 // Fallback preset alarm chime asset
 const DEFAULT_ALARM_ASSET = require('../../assets/sounds/daycraft_chime.wav');
 
-// Audio Engine Abstraction (supports both expo-audio and expo-av lazily without startup crash)
-type AudioModuleType = 'expo-audio' | 'expo-av' | 'none';
+// Audio Engine state
+type AudioModuleType = 'expo-audio' | 'none';
 
 let detectedModule: AudioModuleType | null = null;
-let activeExpoAudioPlayer: any = null;
-let activeExpoAvSound: any = null;
+let activeAudioPlayer: any = null;
 let previewTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let hapticIntervalId: ReturnType<typeof setInterval> | null = null;
 
 function getAudioModule(): AudioModuleType {
   if (detectedModule !== null) return detectedModule;
 
-  // 1. Try modern expo-audio first (supported in Expo SDK 58 & Expo Go)
+  // Use official modern expo-audio (supported in Expo SDK 58 & Expo Go)
   try {
     const expoAudio = require('expo-audio');
     if (expoAudio && typeof expoAudio.createAudioPlayer === 'function') {
@@ -26,17 +25,6 @@ function getAudioModule(): AudioModuleType {
     }
   } catch {
     // expo-audio not available
-  }
-
-  // 2. Try expo-av (development builds & older builds)
-  try {
-    const expoAv = require('expo-av');
-    if (expoAv && expoAv.Audio) {
-      detectedModule = 'expo-av';
-      return detectedModule;
-    }
-  } catch {
-    // expo-av native module not available in this environment
   }
 
   detectedModule = 'none';
@@ -48,24 +36,16 @@ function getAudioModule(): AudioModuleType {
  */
 export async function configureAlarmAudioMode(): Promise<void> {
   const engine = getAudioModule();
-  try {
-    if (engine === 'expo-audio') {
+  if (engine === 'expo-audio') {
+    try {
       const expoAudio = require('expo-audio');
       await expoAudio.setAudioModeAsync({
         playsInSilentMode: true,
         shouldPlayInBackground: true,
       });
-    } else if (engine === 'expo-av') {
-      const expoAv = require('expo-av');
-      await expoAv.Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: false,
-        playThroughEarpieceAndroid: false,
-      });
+    } catch {
+      // Ignore audio mode configuration error
     }
-  } catch (err) {
-    // Ignore audio mode configuration error
   }
 }
 
@@ -145,7 +125,7 @@ export async function playAlarmSound(
 
     const engine = getAudioModule();
 
-    // Strategy A: expo-audio (Modern SDK 58)
+    // Strategy A: expo-audio (Official Expo SDK 58 audio engine)
     if (engine === 'expo-audio') {
       try {
         const expoAudio = require('expo-audio');
@@ -154,40 +134,14 @@ export async function playAlarmSound(
         player.loop = isLooping;
         player.volume = 1.0;
         player.play();
-        activeExpoAudioPlayer = player;
+        activeAudioPlayer = player;
         return true;
       } catch (err) {
         console.warn('Notice: expo-audio playback fallback:', err);
       }
     }
 
-    // Strategy B: expo-av
-    if (engine === 'expo-av') {
-      try {
-        const expoAv = require('expo-av');
-        const sound = new expoAv.Audio.Sound();
-        if (soundUri && soundUri.trim().length > 0) {
-          await sound.loadAsync(
-            { uri: soundUri },
-            { shouldPlay: true, isLooping, volume: 1.0 }
-          );
-        } else {
-          await sound.loadAsync(DEFAULT_ALARM_ASSET, {
-            shouldPlay: true,
-            isLooping,
-            volume: 1.0,
-          });
-        }
-        activeExpoAvSound = sound;
-        await sound.playAsync();
-        return true;
-      } catch (err) {
-        console.warn('Notice: expo-av playback fallback:', err);
-      }
-    }
-
-    // Strategy C: Fallback in environments without native audio module (e.g. Expo Go without ExponentAV)
-    // Run gentle recurring haptic feedback so the user still has an active tactile wake alert
+    // Strategy B: Fallback haptic pulses
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       if (isLooping) {
@@ -220,27 +174,16 @@ export async function stopAlarmSound(): Promise<void> {
     hapticIntervalId = null;
   }
 
-  if (activeExpoAudioPlayer) {
+  if (activeAudioPlayer) {
     try {
-      activeExpoAudioPlayer.pause();
-      if (typeof activeExpoAudioPlayer.remove === 'function') {
-        activeExpoAudioPlayer.remove();
+      activeAudioPlayer.pause();
+      if (typeof activeAudioPlayer.remove === 'function') {
+        activeAudioPlayer.remove();
       }
     } catch {
       // Ignore
     } finally {
-      activeExpoAudioPlayer = null;
-    }
-  }
-
-  if (activeExpoAvSound) {
-    try {
-      await activeExpoAvSound.stopAsync();
-      await activeExpoAvSound.unloadAsync();
-    } catch {
-      // Ignore
-    } finally {
-      activeExpoAvSound = null;
+      activeAudioPlayer = null;
     }
   }
 }
@@ -265,16 +208,8 @@ export async function previewAlarmSound(
  * Returns whether an alarm sound is currently playing.
  */
 export async function isAlarmSoundPlaying(): Promise<boolean> {
-  if (activeExpoAudioPlayer) {
-    return !!activeExpoAudioPlayer.playing;
-  }
-  if (activeExpoAvSound) {
-    try {
-      const status = await activeExpoAvSound.getStatusAsync();
-      return status.isLoaded && status.isPlaying;
-    } catch {
-      return false;
-    }
+  if (activeAudioPlayer) {
+    return !!activeAudioPlayer.playing;
   }
   return !!hapticIntervalId;
 }
