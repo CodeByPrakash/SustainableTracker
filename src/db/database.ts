@@ -254,6 +254,22 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       is_active    INTEGER NOT NULL DEFAULT 1
     );
 
+    -- ───────────────────── Alarms & Wakeup ────────────────
+    CREATE TABLE IF NOT EXISTS alarms (
+      id             TEXT PRIMARY KEY,
+      time           TEXT NOT NULL, -- '05:45' (24h HH:mm)
+      label          TEXT NOT NULL DEFAULT 'Wake Up',
+      days           TEXT NOT NULL DEFAULT '0,1,2,3,4,5,6', -- comma separated days 0=Sun..6=Sat
+      is_enabled     INTEGER NOT NULL DEFAULT 1,
+      sound_type     TEXT NOT NULL DEFAULT 'preset', -- 'preset' | 'custom'
+      sound_name     TEXT NOT NULL DEFAULT 'Daycraft Chime',
+      sound_uri      TEXT, -- local file path for custom music/audio
+      snooze_minutes INTEGER NOT NULL DEFAULT 9,
+      vibrate        INTEGER NOT NULL DEFAULT 1,
+      created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- ───────────────────── Indexes ──────────────────────
     CREATE INDEX IF NOT EXISTS idx_habit_logs_date       ON habit_logs(date);
     CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_id   ON habit_logs(habit_id);
@@ -264,7 +280,21 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     CREATE INDEX IF NOT EXISTS idx_water_logs_date       ON water_logs(date);
     CREATE INDEX IF NOT EXISTS idx_sleep_logs_date       ON sleep_logs(date);
     CREATE INDEX IF NOT EXISTS idx_schedule_blocks_dow   ON schedule_blocks(day_of_week);
+    CREATE INDEX IF NOT EXISTS idx_alarms_enabled        ON alarms(is_enabled);
   `);
+
+  // Ensure default wakeup alarm exists
+  try {
+    const existing = await database.getFirstAsync<{ count: number }>('SELECT count(*) as count FROM alarms');
+    if (!existing || existing.count === 0) {
+      await database.runAsync(`
+        INSERT INTO alarms (id, time, label, days, is_enabled, sound_type, sound_name, snooze_minutes, vibrate)
+        VALUES ('default_wake_alarm', '05:45', 'Wake Up', '0,1,2,3,4,5,6', 1, 'preset', 'Daycraft Chime', 9, 1);
+      `);
+    }
+  } catch (err) {
+    // Graceful fallback if table is newly created
+  }
 
   // Safe schema migration for default_weight_kg in existing databases
   try {

@@ -29,6 +29,7 @@ import {
   Save,
   Volume2,
   BellRing,
+  Music,
 } from 'lucide-react-native';
 import { useTheme, Typography, Spacing, Radius } from '../src/theme';
 import { getDatabase } from '../src/db/database';
@@ -474,6 +475,62 @@ export default function SettingsScreen() {
             </>
           )}
         </View>
+
+        {/* Wakeup Alarms Section */}
+        <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Wakeup Alarms & Music</Text>
+        </View>
+        <Pressable
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.orange,
+              borderWidth: 1.5,
+              padding: Spacing.base,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            },
+          ]}
+          onPress={() => router.push('/alarm')}
+          accessibilityRole="button"
+          accessibilityLabel="Manage wakeup alarms and custom music"
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.orangeSoft,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 12,
+              }}
+            >
+              <Music size={22} color={colors.orange} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[Typography.bodyMedium, { color: colors.ink, fontWeight: '700' }]}>
+                Wakeup Alarms & Custom Music
+              </Text>
+              <Text style={[Typography.captionSmall, { color: colors.inkMuted, marginTop: 2 }]}>
+                Set repeat alarms with custom audio, snooze & high priority call
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 10,
+              backgroundColor: colors.orange,
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Open</Text>
+          </View>
+        </Pressable>
 
         {/* Personal Discipline Targets Section */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>

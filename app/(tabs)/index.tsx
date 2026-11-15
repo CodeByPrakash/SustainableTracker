@@ -31,6 +31,7 @@ import { getActiveHabits, getHabitLogsForDate, toggleHabitLog, Habit, HabitLog }
 import { getWaterForDate, logWater } from '../../src/db/queries/healthQueries';
 import { getToday, getGreeting, formatDateDisplay, formatTime12 } from '../../src/utils/dateUtils';
 import { syncScheduleNotifications } from '../../src/utils/notifications';
+import { syncAlarmNotifications } from '../../src/utils/alarmNotifications';
 import { ProgressRing } from '../../src/components/ui/ProgressRing';
 import { CategoryCard } from '../../src/components/ui/CategoryCard';
 import { TaskRow } from '../../src/components/ui/TaskRow';
@@ -81,8 +82,9 @@ export default function HomeScreen() {
       setHabitLogs(logsData);
       setWaterTotal(waterData);
 
-      // Sync upcoming to-do reminders safely in background
+      // Sync upcoming to-do reminders & wakeup alarms safely in background
       syncScheduleNotifications(db).catch((e) => console.warn('Notification sync warning:', e));
+      syncAlarmNotifications(db).catch((e) => console.warn('Alarm sync warning:', e));
     } catch (err) {
       console.error('Failed to load home data:', err);
     }
@@ -219,6 +221,12 @@ export default function HomeScreen() {
           <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Quick Actions</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsScroll}>
+          <QuickActionPill
+            label="Wakeup Alarm"
+            icon={Bell}
+            accentColor={colors.orange}
+            onPress={() => router.push('/alarm')}
+          />
           <QuickActionPill
             label="Start Workout"
             icon={Dumbbell}
