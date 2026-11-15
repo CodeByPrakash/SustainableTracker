@@ -81,6 +81,44 @@ export async function getWorkoutPlanForDay(
   return { ...plan, exercises };
 }
 
+export async function getAllWorkoutPlans(
+  db: SQLiteDatabase
+): Promise<WorkoutPlan[]> {
+  return db.getAllAsync<WorkoutPlan>(
+    `SELECT * FROM workout_plans ORDER BY day_of_week ASC`
+  );
+}
+
+/**
+ * Create or update a workout plan for a specific day of the week
+ */
+export async function createOrUpdateWorkoutPlanForDay(
+  db: SQLiteDatabase,
+  dayOfWeek: number,
+  name: string,
+  focus: string
+): Promise<string> {
+  const existing = await db.getFirstAsync<WorkoutPlan>(
+    `SELECT * FROM workout_plans WHERE day_of_week = ?`,
+    [dayOfWeek]
+  );
+  if (existing) {
+    await db.runAsync(
+      `UPDATE workout_plans SET name = ?, focus = ? WHERE id = ?`,
+      [name, focus, existing.id]
+    );
+    return existing.id;
+  } else {
+    const id = uuid();
+    await db.runAsync(
+      `INSERT INTO workout_plans (id, day_of_week, name, focus, sort_order)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, dayOfWeek, name, focus, dayOfWeek]
+    );
+    return id;
+  }
+}
+
 /**
  * Update an existing workout plan (e.g. rename or change focus)
  */
@@ -93,6 +131,26 @@ export async function updateWorkoutPlan(
   await db.runAsync(
     `UPDATE workout_plans SET name = ?, focus = ? WHERE id = ?`,
     [name, focus, planId]
+  );
+}
+
+/**
+ * Update an exercise in a workout plan
+ */
+export async function updateExercise(
+  db: SQLiteDatabase,
+  exerciseId: string,
+  name: string,
+  category: string,
+  defaultSets: number,
+  defaultReps: number,
+  defaultWeightKg: number
+): Promise<void> {
+  await db.runAsync(
+    `UPDATE exercises 
+     SET name = ?, category = ?, default_sets = ?, default_reps = ?, default_weight_kg = ?
+     WHERE id = ?`,
+    [name, category, defaultSets, defaultReps, defaultWeightKg, exerciseId]
   );
 }
 

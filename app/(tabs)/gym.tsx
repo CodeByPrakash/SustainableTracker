@@ -7,6 +7,9 @@ import {
   Pressable,
   TextInput,
   Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,17 +25,22 @@ import {
   Timer,
   ChevronRight,
   RefreshCw,
+  Edit2,
+  Trash2,
+  X,
 } from 'lucide-react-native';
 import { useTheme, Typography, Spacing, Radius } from '../../src/theme';
 import { getDatabase } from '../../src/db/database';
 import {
   getWorkoutPlanForDay,
+  getAllWorkoutPlans,
+  createOrUpdateWorkoutPlanForDay,
+  addExerciseToPlan,
+  updateExercise,
+  deleteExercise,
   getWorkoutHistory,
   getBodyWeight,
   logBodyWeight,
-  addExerciseToPlan,
-  updateWorkoutPlan,
-  deleteExercise,
   applyCalibrationFor55Kg,
   WorkoutPlan,
   Exercise,
@@ -45,8 +53,8 @@ import { MetricCard } from '../../src/components/ui/MetricCard';
 import { WeeklyBarChart } from '../../src/components/charts/WeeklyBarChart';
 import { TrendLineChart } from '../../src/components/charts/TrendLineChart';
 import { ConsistencyHeatmap, HeatmapDay } from '../../src/components/charts/ConsistencyHeatmap';
-import { BottomSheet } from '../../src/components/ui/BottomSheet';
 import { EmptyState } from '../../src/components/ui/EmptyState';
+import { ConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useAppStore } from '../../src/stores/appStore';
 
 export default function GymScreen() {
@@ -56,54 +64,214 @@ export default function GymScreen() {
   const triggerRefresh = useAppStore((state) => state.triggerRefresh);
 
   const [activeTab, setActiveTab] = useState(0); // 0: Overview, 1: Workout, 2: Progress, 3: History
+  const todayDow = new Date().getDay() === 0 ? 7 : new Date().getDay(); // 1=Mon ... 7=Sun
+  const [selectedDay, setSelectedDay] = useState<number>(todayDow);
+
   const [todaysPlan, setTodaysPlan] = useState<(WorkoutPlan & { exercises: Exercise[] }) | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<(WorkoutPlan & { exercises: Exercise[] }) | null>(null);
+  const [allPlans, setAllPlans] = useState<WorkoutPlan[]>([]);
   const [history, setHistory] = useState<WorkoutSession[]>([]);
   const [latestWeight, setLatestWeight] = useState<BodyMeasurement | null>(null);
   const [weightLogs, setWeightLogs] = useState<BodyMeasurement[]>([]);
 
-  // Body weight bottom sheet
-  const [weightSheetVisible, setWeightSheetVisible] = useState(false);
-  const [weightInput, setWeightInput] = useState('');
+  // Centered Modals
+  // 1. Edit Split Modal
+  const [editSplitVisible, setEditSplitVisible] = useState(false);
+  const [editSplitDay, setEditSplitDay] = useState<number>(1);
+  const [editSplitName, setEditSplitName] = useState('');
+  const [editSplitFocus, setEditSplitFocus] = useState('');
 
-  // Add Exercise Sheet
-  const [addExSheetVisible, setAddExSheetVisible] = useState(false);
+  // 2. Add Exercise Modal
+  const [addExModalVisible, setAddExModalVisible] = useState(false);
   const [exName, setExName] = useState('');
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('10');
   const [exWeight, setExWeight] = useState('20');
   const [exCategory, setExCategory] = useState('general');
 
-  // Edit Split Sheet
-  const [editSplitVisible, setEditSplitVisible] = useState(false);
-  const [editSplitDay, setEditSplitDay] = useState<number>(1);
-  const [editSplitName, setEditSplitName] = useState('');
-  const [editSplitFocus, setEditSplitFocus] = useState('');
+  // 3. Edit Exercise Modal
+  const [editExModalVisible, setEditExModalVisible] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [editExName, setEditExName] = useState('');
+  const [editExSets, setEditExSets] = useState('3');
+  const [editExReps, setEditExReps] = useState('10');
+  const [editExWeight, setEditExWeight] = useState('20');
+  const [editExCategory, setEditExCategory] = useState('general');
 
-  const todayDow = new Date().getDay() === 0 ? 7 : new Date().getDay(); // 1=Mon ... 7=Sun
+  // 4. Delete Exercise Confirm
+  const [deleteExConfirmVisible, setDeleteExConfirmVisible] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
+
+  // 5. Body weight Modal
+  const [weightModalVisible, setWeightModalVisible] = useState(false);
+  const [weightInput, setWeightInput] = useState('');
 
   const loadData = useCallback(async () => {
     try {
       const db = await getDatabase();
-      const [plan, hist, weight, allWeights] = await Promise.all([
+      const [todayPlan, currentSelectedPlan, plans, hist, weight, allWeights] = await Promise.all([
         getWorkoutPlanForDay(db, todayDow),
+        getWorkoutPlanForDay(db, selectedDay),
+        getAllWorkoutPlans(db),
         getWorkoutHistory(db, 20),
         getBodyWeight(db),
         db.getAllAsync<BodyMeasurement>(
           'SELECT * FROM body_measurements ORDER BY date ASC LIMIT 30'
         ),
       ]);
-      setTodaysPlan(plan);
+      setTodaysPlan(todayPlan);
+      setSelectedPlan(currentSelectedPlan);
+      setAllPlans(plans);
       setHistory(hist);
       setLatestWeight(weight);
       setWeightLogs(allWeights);
     } catch (err) {
       console.error('Failed to load gym data:', err);
     }
-  }, [todayDow]);
+  }, [todayDow, selectedDay]);
 
   useEffect(() => {
     loadData();
   }, [loadData, refreshKey]);
+
+  // Open Edit Split for a specific day
+  const openEditSplitForDay = async (dow: number) => {
+    setEditSplitDay(dow);
+    const existing = allPlans.find((p) => p.day_of_week === dow);
+    if (existing) {
+      setEditSplitName(existing.name);
+      setEditSplitFocus(existing.focus);
+    } else {
+      const db = await getDatabase();
+      const p = await db.getFirstAsync<WorkoutPlan>(
+        'SELECT * FROM workout_plans WHERE day_of_week = ?',
+        [dow]
+      );
+      setEditSplitName(p?.name || (dow === 7 ? 'Rest / Recovery' : 'Custom Split'));
+      setEditSplitFocus(p?.focus || (dow === 7 ? 'rest' : 'general'));
+    }
+    setEditSplitVisible(true);
+  };
+
+  // Save Split Edit
+  const handleSaveSplit = async () => {
+    if (!editSplitName.trim()) {
+      Alert.alert('Required', 'Please enter a split name.');
+      return;
+    }
+    try {
+      const db = await getDatabase();
+      await createOrUpdateWorkoutPlanForDay(
+        db,
+        editSplitDay,
+        editSplitName.trim(),
+        editSplitFocus.trim()
+      );
+      setEditSplitVisible(false);
+      await loadData();
+      triggerRefresh();
+    } catch (err) {
+      console.error('Failed to update split:', err);
+    }
+  };
+
+  // Open Add Exercise Modal
+  const openAddExercise = () => {
+    setExName('');
+    setExSets('3');
+    setExReps('10');
+    setExWeight('20');
+    setExCategory('general');
+    setAddExModalVisible(true);
+  };
+
+  // Add Exercise to Plan
+  const handleAddExercise = async () => {
+    if (!selectedPlan && !todaysPlan) {
+      Alert.alert('No Plan', 'Please select or create a workout plan first.');
+      return;
+    }
+    const targetPlan = selectedPlan || todaysPlan;
+    if (!targetPlan || !exName.trim()) {
+      Alert.alert('Required', 'Please enter an exercise name.');
+      return;
+    }
+    try {
+      const db = await getDatabase();
+      await addExerciseToPlan(
+        db,
+        targetPlan.id,
+        exName.trim(),
+        exCategory,
+        parseInt(exSets, 10) || 3,
+        parseInt(exReps, 10) || 10,
+        parseFloat(exWeight) || 20
+      );
+      setAddExModalVisible(false);
+      setExName('');
+      await loadData();
+      triggerRefresh();
+    } catch (err) {
+      console.error('Failed to add exercise:', err);
+    }
+  };
+
+  // Open Edit Exercise Modal
+  const openEditExercise = (ex: Exercise) => {
+    setEditingExercise(ex);
+    setEditExName(ex.name);
+    setEditExCategory(ex.category || 'general');
+    setEditExSets(String(ex.default_sets ?? 3));
+    setEditExReps(String(ex.default_reps ?? 10));
+    setEditExWeight(String(ex.default_weight_kg ?? 20));
+    setEditExModalVisible(true);
+  };
+
+  // Save Edited Exercise
+  const handleSaveEditExercise = async () => {
+    if (!editingExercise || !editExName.trim()) {
+      Alert.alert('Required', 'Please enter an exercise name.');
+      return;
+    }
+    try {
+      const db = await getDatabase();
+      await updateExercise(
+        db,
+        editingExercise.id,
+        editExName.trim(),
+        editExCategory,
+        parseInt(editExSets, 10) || 3,
+        parseInt(editExReps, 10) || 10,
+        parseFloat(editExWeight) || 20
+      );
+      setEditExModalVisible(false);
+      setEditingExercise(null);
+      await loadData();
+      triggerRefresh();
+    } catch (err) {
+      console.error('Failed to update exercise:', err);
+    }
+  };
+
+  // Confirm and Delete Exercise
+  const promptDeleteExercise = (ex: Exercise) => {
+    setExerciseToDelete(ex);
+    setDeleteExConfirmVisible(true);
+  };
+
+  const handleConfirmDeleteExercise = async () => {
+    if (!exerciseToDelete) return;
+    try {
+      const db = await getDatabase();
+      await deleteExercise(db, exerciseToDelete.id);
+      setDeleteExConfirmVisible(false);
+      setExerciseToDelete(null);
+      await loadData();
+      triggerRefresh();
+    } catch (err) {
+      console.error('Failed to delete exercise:', err);
+    }
+  };
 
   // Save body weight
   const handleSaveWeight = async () => {
@@ -115,39 +283,12 @@ export default function GymScreen() {
     try {
       const db = await getDatabase();
       await logBodyWeight(db, val, getToday());
-      setWeightSheetVisible(false);
+      setWeightModalVisible(false);
       setWeightInput('');
       await loadData();
       triggerRefresh();
     } catch (err) {
       console.error('Failed to log weight:', err);
-    }
-  };
-
-  // Add Exercise to Plan
-  const handleAddExercise = async () => {
-    if (!todaysPlan || !exName.trim()) {
-      Alert.alert('Required', 'Please enter an exercise name.');
-      return;
-    }
-    try {
-      const db = await getDatabase();
-      await addExerciseToPlan(
-        db,
-        todaysPlan.id,
-        exName.trim(),
-        exCategory,
-        parseInt(exSets, 10) || 3,
-        parseInt(exReps, 10) || 10,
-        parseFloat(exWeight) || 20
-      );
-      setAddExSheetVisible(false);
-      setExName('');
-      setExWeight('20');
-      await loadData();
-      triggerRefresh();
-    } catch (err) {
-      console.error('Failed to add exercise:', err);
     }
   };
 
@@ -164,32 +305,9 @@ export default function GymScreen() {
     }
   };
 
-  // Save Split Edit
-  const handleSaveSplit = async () => {
-    if (!editSplitName.trim()) {
-      Alert.alert('Required', 'Please enter a split name.');
-      return;
-    }
-    try {
-      const db = await getDatabase();
-      const plan = await db.getFirstAsync<WorkoutPlan>(
-        'SELECT * FROM workout_plans WHERE day_of_week = ?',
-        [editSplitDay]
-      );
-      if (plan) {
-        await updateWorkoutPlan(db, plan.id, editSplitName.trim(), editSplitFocus.trim());
-      }
-      setEditSplitVisible(false);
-      await loadData();
-      triggerRefresh();
-    } catch (err) {
-      console.error('Failed to update split:', err);
-    }
-  };
-
   const tabs = ['Overview', 'Workout', 'Progress', 'History'];
 
-  // Mock sample heatmap & bar data based on actual db history
+  // History dates for heatmap & weekly chart
   const historyDates = new Set(history.map((h) => h.date));
   const todayStr = getToday();
 
@@ -241,6 +359,9 @@ export default function GymScreen() {
     value: w.weight_kg ?? 55,
   }));
 
+  // Current plan shown in Workout tab
+  const activePlanInWorkout = selectedPlan || todaysPlan;
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.canvas }]} edges={['top']}>
       {/* Header */}
@@ -256,7 +377,7 @@ export default function GymScreen() {
             </View>
           </View>
           <Text style={[Typography.caption, { color: colors.inkMuted, marginTop: 2 }]}>
-            {DAY_NAMES[todayDow - 1]}'s Split: {todaysPlan?.focus || 'Rest & Recovery'}
+            {DAY_NAMES[todayDow - 1]}'s Split: {todaysPlan?.focus ? todaysPlan.focus.replace(/,/g, ' • ') : 'Rest & Recovery'}
           </Text>
         </View>
 
@@ -278,20 +399,20 @@ export default function GymScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* TAB 0: OVERVIEW */}
+        {/* ─── TAB 0: OVERVIEW ─── */}
         {activeTab === 0 && (
           <View style={styles.tabContent}>
             {/* Split Banner */}
             <View style={[styles.splitCard, { backgroundColor: colors.orangeSoft, borderColor: colors.orange }]}>
-              <View>
+              <View style={{ flex: 1, marginRight: Spacing.sm }}>
                 <Text style={[Typography.captionSmall, { color: colors.orangeDark, textTransform: 'uppercase', letterSpacing: 1 }]}>
                   Today's Training Focus
                 </Text>
                 <Text style={[Typography.screenTitle, { color: colors.orangeDark, marginTop: 2 }]}>
                   {todaysPlan?.name || 'Active Recovery'}
                 </Text>
-                <Text style={[Typography.body, { color: colors.ink, marginTop: 4 }]}>
-                  {todaysPlan?.focus || 'Take rest or perform light mobility.'}
+                <Text style={[Typography.body, { color: colors.ink, marginTop: 4, textTransform: 'capitalize' }]}>
+                  {todaysPlan?.focus ? todaysPlan.focus.replace(/,/g, ' • ') : 'Take rest or perform light mobility.'}
                 </Text>
               </View>
               <Pressable
@@ -317,7 +438,10 @@ export default function GymScreen() {
                 subtitle={latestWeight ? 'Tap to update' : 'Baseline 55 kg'}
                 icon={Scale}
                 accentColor={colors.orange}
-                onPress={() => setWeightSheetVisible(true)}
+                onPress={() => {
+                  setWeightInput(latestWeight ? String(latestWeight.weight_kg) : '55');
+                  setWeightModalVisible(true);
+                }}
               />
             </View>
 
@@ -342,73 +466,168 @@ export default function GymScreen() {
               </Pressable>
             </View>
 
-            {/* Weekly Plan Summary */}
-            <View style={styles.sectionHeader}>
-              <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Weekly Training Split</Text>
+            {/* Weekly Training Split (100% Real & Editable) */}
+            <View style={[styles.sectionHeader, { marginTop: Spacing.sm }]}>
+              <View>
+                <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Weekly Training Split</Text>
+                <Text style={[Typography.captionSmall, { color: colors.inkMuted, marginTop: 1 }]}>
+                  Tap any day or pencil to customize your routine
+                </Text>
+              </View>
               <Pressable
-                onPress={() => {
-                  setEditSplitDay(todayDow);
-                  setEditSplitName(todaysPlan?.name || '');
-                  setEditSplitFocus(todaysPlan?.focus || '');
-                  setEditSplitVisible(true);
-                }}
+                style={[styles.smallActionBtn, { backgroundColor: colors.orangeSoft }]}
+                onPress={() => openEditSplitForDay(todayDow)}
               >
-                <Text style={[Typography.caption, { color: colors.orange, fontWeight: '600' }]}>Edit Split</Text>
+                <Edit2 size={13} color={colors.orangeDark} />
+                <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginLeft: 4 }]}>
+                  Edit Split
+                </Text>
               </Pressable>
             </View>
+
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-              {[
-                { day: 'Mon', focus: 'Chest + Triceps' },
-                { day: 'Tue', focus: 'Back + Biceps' },
-                { day: 'Wed', focus: 'Legs + Abs' },
-                { day: 'Thu', focus: 'Shoulders + Triceps' },
-                { day: 'Fri', focus: 'Chest + Back' },
-                { day: 'Sat', focus: 'Legs + Biceps + Abs' },
-                { day: 'Sun', focus: 'Rest / Recovery' },
-              ].map((item, idx) => {
-                const isToday = idx + 1 === todayDow;
+              {DAY_NAMES.map((dayName, idx) => {
+                const dow = idx + 1; // 1=Mon ... 7=Sun
+                const isToday = dow === todayDow;
+                const plan = allPlans.find((p) => p.day_of_week === dow);
+                const planName = plan?.name || (dow === 7 ? 'Rest / Recovery' : 'Custom Split');
+                const planFocus = plan?.focus || (dow === 7 ? 'Rest' : 'General');
+
                 return (
-                  <View
-                    key={item.day}
-                    style={[
+                  <Pressable
+                    key={dayName}
+                    style={({ pressed }) => [
                       styles.splitRow,
                       { borderBottomColor: colors.line },
-                      isToday && { backgroundColor: colors.orangeSoft + '60' },
+                      isToday && { backgroundColor: colors.orangeSoft + '40' },
+                      pressed && { opacity: 0.7 },
                     ]}
+                    onPress={() => openEditSplitForDay(dow)}
                   >
-                    <Text style={[Typography.bodyMedium, { color: isToday ? colors.orangeDark : colors.ink, width: 60 }]}>
-                      {item.day}
-                    </Text>
-                    <Text style={[Typography.body, { color: isToday ? colors.orangeDark : colors.inkMuted, flex: 1 }]}>
-                      {item.focus}
-                    </Text>
+                    <View style={[styles.splitDayBadge, { backgroundColor: isToday ? colors.orangeSoft : colors.surfaceMuted }]}>
+                      <Text style={[Typography.bodyMedium, { color: isToday ? colors.orangeDark : colors.ink, fontWeight: '700' }]}>
+                        {dayName.slice(0, 3)}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, paddingHorizontal: Spacing.sm }}>
+                      <Text style={[Typography.bodyMedium, { color: isToday ? colors.orangeDark : colors.ink, fontWeight: '600' }]}>
+                        {planName}
+                      </Text>
+                      <Text style={[Typography.caption, { color: colors.inkMuted, textTransform: 'capitalize' }]} numberOfLines={1}>
+                        {planFocus.replace(/,/g, ' • ')}
+                      </Text>
+                    </View>
                     {isToday && (
-                      <View style={[styles.todayTag, { backgroundColor: colors.orange }]}>
-                        <Text style={[Typography.captionSmall, { color: '#FFFFFF', fontWeight: '700' }]}>TODAY</Text>
+                      <View style={[styles.todayTag, { backgroundColor: colors.orange, marginRight: Spacing.xs }]}>
+                        <Text style={[Typography.captionSmall, { color: '#FFFFFF', fontWeight: '700', fontSize: 10 }]}>
+                          TODAY
+                        </Text>
                       </View>
                     )}
-                  </View>
+                    <Pressable
+                      style={[styles.editIconBtn, { backgroundColor: colors.surfaceMuted }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        openEditSplitForDay(dow);
+                      }}
+                      hitSlop={8}
+                    >
+                      <Edit2 size={13} color={colors.inkMuted} />
+                    </Pressable>
+                  </Pressable>
                 );
               })}
             </View>
           </View>
         )}
 
-        {/* TAB 1: WORKOUT */}
+        {/* ─── TAB 1: WORKOUT (VIEW & EDIT ANY DAY) ─── */}
         {activeTab === 1 && (
           <View style={styles.tabContent}>
+            {/* Day Selector Pill Bar */}
+            <View style={styles.daySelectorWrapper}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daySelectorScroll}>
+                {DAY_NAMES.map((name, idx) => {
+                  const dow = idx + 1;
+                  const isSel = selectedDay === dow;
+                  const isToday = dow === todayDow;
+                  return (
+                    <Pressable
+                      key={name}
+                      style={[
+                        styles.daySelectorPill,
+                        {
+                          backgroundColor: isSel ? colors.orange : colors.surface,
+                          borderColor: isSel ? colors.orange : colors.line,
+                        },
+                      ]}
+                      onPress={() => setSelectedDay(dow)}
+                    >
+                      <Text
+                        style={[
+                          Typography.captionSmall,
+                          {
+                            color: isSel ? '#FFFFFF' : colors.ink,
+                            fontWeight: isSel ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {name.slice(0, 3)}
+                        {isToday ? ' •' : ''}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Split Info Bar for Selected Day */}
+            <View style={[styles.selectedSplitHeaderCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+              <View style={{ flex: 1, marginRight: Spacing.sm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', textTransform: 'uppercase' }]}>
+                    {DAY_NAMES[selectedDay - 1]} ROUTINE
+                  </Text>
+                  {selectedDay === todayDow && (
+                    <View style={[styles.todayTag, { backgroundColor: colors.orange }]}>
+                      <Text style={[Typography.captionSmall, { color: '#FFFFFF', fontWeight: '700', fontSize: 9 }]}>
+                        TODAY
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[Typography.sectionTitle, { color: colors.ink, marginTop: 2 }]}>
+                  {activePlanInWorkout?.name || 'Rest / Recovery'}
+                </Text>
+                <Text style={[Typography.caption, { color: colors.inkMuted, textTransform: 'capitalize' }]}>
+                  Focus: {activePlanInWorkout?.focus ? activePlanInWorkout.focus.replace(/,/g, ' • ') : 'Rest'}
+                </Text>
+              </View>
+
+              <Pressable
+                style={[styles.smallActionBtn, { backgroundColor: colors.surfaceMuted, borderWidth: 1, borderColor: colors.line }]}
+                onPress={() => openEditSplitForDay(selectedDay)}
+              >
+                <Edit2 size={13} color={colors.ink} />
+                <Text style={[Typography.captionSmall, { color: colors.ink, fontWeight: '600', marginLeft: 4 }]}>
+                  Edit Split
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Action Bar: Add Exercise & Start */}
             <View style={styles.sectionHeader}>
               <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
-                {todaysPlan?.name} Exercises
+                Prescribed Exercises ({activePlanInWorkout?.exercises?.length || 0})
               </Text>
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 <Pressable
                   style={[styles.smallActionBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.orange }]}
-                  onPress={() => setAddExSheetVisible(true)}
+                  onPress={openAddExercise}
                 >
                   <Plus size={14} color={colors.orange} />
                   <Text style={[Typography.captionSmall, { color: colors.orange, fontWeight: '700', marginLeft: 4 }]}>
-                    Add
+                    Add Exercise
                   </Text>
                 </Pressable>
                 <Pressable
@@ -423,43 +642,63 @@ export default function GymScreen() {
               </View>
             </View>
 
-            {todaysPlan?.exercises && todaysPlan.exercises.length > 0 ? (
+            {activePlanInWorkout?.exercises && activePlanInWorkout.exercises.length > 0 ? (
               <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-                {todaysPlan.exercises.map((ex, i) => (
+                {activePlanInWorkout.exercises.map((ex, i) => (
                   <View key={ex.id} style={[styles.exerciseItem, { borderBottomColor: colors.line }]}>
                     <View style={styles.exNumber}>
                       <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700' }]}>
                         {i + 1}
                       </Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[Typography.bodyMedium, { color: colors.ink }]}>{ex.name}</Text>
+                    <View style={{ flex: 1, marginRight: Spacing.xs }}>
+                      <Text style={[Typography.bodyMedium, { color: colors.ink, fontWeight: '600' }]}>
+                        {ex.name}
+                      </Text>
                       <Text style={[Typography.caption, { color: colors.inkMuted }]}>
                         {ex.default_sets} sets × {ex.default_reps} reps • {ex.default_weight_kg ? `${ex.default_weight_kg} kg` : '20 kg'}
                       </Text>
                     </View>
-                    <Pressable
-                      style={[styles.quickLogSetBtn, { borderColor: colors.orange }]}
-                      onPress={() => router.push('/workout-active')}
-                    >
-                      <Text style={[Typography.captionSmall, { color: colors.orange, fontWeight: '700' }]}>Log</Text>
-                    </Pressable>
+
+                    {/* Action Buttons: Edit, Delete, Log */}
+                    <View style={styles.exActionsRow}>
+                      <Pressable
+                        style={[styles.iconButtonSmall, { backgroundColor: colors.surfaceMuted }]}
+                        onPress={() => openEditExercise(ex)}
+                        hitSlop={8}
+                      >
+                        <Edit2 size={13} color={colors.ink} />
+                      </Pressable>
+                      <Pressable
+                        style={[styles.iconButtonSmall, { backgroundColor: colors.surfaceMuted }]}
+                        onPress={() => promptDeleteExercise(ex)}
+                        hitSlop={8}
+                      >
+                        <Trash2 size={13} color={colors.danger} />
+                      </Pressable>
+                      <Pressable
+                        style={[styles.quickLogSetBtn, { borderColor: colors.orange, backgroundColor: colors.orangeSoft }]}
+                        onPress={() => router.push('/workout-active')}
+                      >
+                        <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700' }]}>Log</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 ))}
               </View>
             ) : (
               <EmptyState
                 icon={Dumbbell}
-                title="Rest Day"
-                message="No exercises prescribed for today. Enjoy your rest or take a walk!"
-                actionLabel="Start Freestyle Workout"
-                onAction={() => router.push('/workout-active')}
+                title="Rest or Empty Routine"
+                message={`No exercises assigned for ${DAY_NAMES[selectedDay - 1]}. Tap "Add Exercise" to customize this workout.`}
+                actionLabel="Add First Exercise"
+                onAction={openAddExercise}
               />
             )}
           </View>
         )}
 
-        {/* TAB 2: PROGRESS */}
+        {/* ─── TAB 2: PROGRESS ─── */}
         {activeTab === 2 && (
           <View style={styles.tabContent}>
             <View style={styles.sectionHeader}>
@@ -471,7 +710,12 @@ export default function GymScreen() {
 
             <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>
               <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Body Weight Progression</Text>
-              <Pressable onPress={() => setWeightSheetVisible(true)}>
+              <Pressable
+                onPress={() => {
+                  setWeightInput(latestWeight ? String(latestWeight.weight_kg) : '55');
+                  setWeightModalVisible(true);
+                }}
+              >
                 <Text style={[Typography.caption, { color: colors.orange, fontWeight: '600' }]}>+ Log Weight</Text>
               </Pressable>
             </View>
@@ -484,7 +728,10 @@ export default function GymScreen() {
                   title="No Weight Records"
                   message="Log your body weight consistently to track progress."
                   actionLabel="Log Weight"
-                  onAction={() => setWeightSheetVisible(true)}
+                  onAction={() => {
+                    setWeightInput('55');
+                    setWeightModalVisible(true);
+                  }}
                 />
               )}
             </View>
@@ -498,7 +745,7 @@ export default function GymScreen() {
           </View>
         )}
 
-        {/* TAB 3: HISTORY */}
+        {/* ─── TAB 3: HISTORY ─── */}
         {activeTab === 3 && (
           <View style={styles.tabContent}>
             <View style={styles.sectionHeader}>
@@ -540,165 +787,479 @@ export default function GymScreen() {
         )}
       </ScrollView>
 
-      {/* Log Body Weight Bottom Sheet */}
-      <BottomSheet
-        visible={weightSheetVisible}
-        onClose={() => setWeightSheetVisible(false)}
-        title="Log Body Weight"
-      >
-        <View style={styles.sheetContent}>
-          <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 6 }]}>
-            Current Weight in kg
-          </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-            value={weightInput}
-            onChangeText={setWeightInput}
-            keyboardType="numeric"
-            placeholder={latestWeight?.weight_kg ? String(latestWeight.weight_kg) : '72.5'}
-            placeholderTextColor={colors.inkMuted}
-          />
-          <Pressable
-            style={[styles.saveWeightBtn, { backgroundColor: colors.orange }]}
-            onPress={handleSaveWeight}
-          >
-            <Text style={[Typography.button, { color: '#FFFFFF' }]}>Save Weight Record</Text>
-          </Pressable>
-        </View>
-      </BottomSheet>
-
-      {/* Add Exercise Bottom Sheet */}
-      <BottomSheet
-        visible={addExSheetVisible}
-        onClose={() => setAddExSheetVisible(false)}
-        title={`Add Exercise to ${todaysPlan?.name || 'Workout'}`}
-      >
-        <View style={styles.sheetContent}>
-          <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>
-            Exercise Name
-          </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-            value={exName}
-            onChangeText={setExName}
-            placeholder="e.g. Romanian Deadlift, Lateral Raise"
-            placeholderTextColor={colors.inkMuted}
-          />
-
-          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <View style={{ flex: 1 }}>
-              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Sets</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-                value={exSets}
-                onChangeText={setExSets}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Reps</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-                value={exReps}
-                onChangeText={setExReps}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Weight (kg)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-                value={exWeight}
-                onChangeText={setExWeight}
-                keyboardType="numeric"
-                placeholder="20"
-                placeholderTextColor={colors.inkMuted}
-              />
-            </View>
-          </View>
-
-          <Pressable
-            style={[styles.saveWeightBtn, { backgroundColor: colors.orange, marginTop: Spacing.sm }]}
-            onPress={handleAddExercise}
-          >
-            <Text style={[Typography.button, { color: '#FFFFFF' }]}>Add to Plan</Text>
-          </Pressable>
-        </View>
-      </BottomSheet>
-
-      {/* Edit Split Bottom Sheet */}
-      <BottomSheet
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      {/* ─── 1. CENTERED MODAL: EDIT TRAINING SPLIT ─── */}
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      <Modal
         visible={editSplitVisible}
-        onClose={() => setEditSplitVisible(false)}
-        title="Edit Training Split"
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setEditSplitVisible(false)}
       >
-        <View style={styles.sheetContent}>
-          <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Day of Week</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.sm }}>
-            {DAY_NAMES.map((name, idx) => {
-              const dow = idx + 1;
-              const isSel = editSplitDay === dow;
-              return (
-                <Pressable
-                  key={name}
-                  style={[
-                    styles.dayPill,
-                    {
-                      backgroundColor: isSel ? colors.orange : colors.surfaceMuted,
-                      borderColor: isSel ? colors.orange : colors.line,
-                    },
-                  ]}
-                  onPress={async () => {
-                    setEditSplitDay(dow);
-                    const db = await getDatabase();
-                    const p = await db.getFirstAsync<WorkoutPlan>(
-                      'SELECT * FROM workout_plans WHERE day_of_week = ?',
-                      [dow]
-                    );
-                    if (p) {
-                      setEditSplitName(p.name);
-                      setEditSplitFocus(p.focus);
-                    }
-                  }}
-                >
-                  <Text style={[Typography.captionSmall, { color: isSel ? '#FFFFFF' : colors.ink }]}>
-                    {name.slice(0, 3)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>
-            Workout Name
-          </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-            value={editSplitName}
-            onChangeText={setEditSplitName}
-            placeholder="e.g. Chest + Triceps"
-            placeholderTextColor={colors.inkMuted}
-          />
-
-          <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>
-            Muscle Focus (Comma separated)
-          </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line }]}
-            value={editSplitFocus}
-            onChangeText={setEditSplitFocus}
-            placeholder="e.g. chest,triceps"
-            placeholderTextColor={colors.inkMuted}
-          />
-
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.centeredModalOverlay}
+        >
           <Pressable
-            style={[styles.saveWeightBtn, { backgroundColor: colors.orange, marginTop: Spacing.sm }]}
-            onPress={handleSaveSplit}
-          >
-            <Text style={[Typography.button, { color: '#FFFFFF' }]}>Update Split</Text>
-          </Pressable>
-        </View>
-      </BottomSheet>
+            style={styles.modalBackdrop}
+            onPress={() => setEditSplitVisible(false)}
+          />
+          <View style={[styles.centeredModalCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+                  Edit Training Split
+                </Text>
+                <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginTop: 2 }]}>
+                  {DAY_NAMES[editSplitDay - 1]} Routine
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setEditSplitVisible(false)}
+                hitSlop={12}
+                style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceMuted }]}
+              >
+                <X size={18} color={colors.ink} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              {/* Day Selector inside modal */}
+              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 6 }]}>
+                Select Day to Configure
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 6, marginBottom: Spacing.base }}
+              >
+                {DAY_NAMES.map((name, idx) => {
+                  const dow = idx + 1;
+                  const isSel = editSplitDay === dow;
+                  return (
+                    <Pressable
+                      key={name}
+                      style={[
+                        styles.dayPill,
+                        {
+                          backgroundColor: isSel ? colors.orange : colors.surfaceMuted,
+                          borderColor: isSel ? colors.orange : colors.line,
+                        },
+                      ]}
+                      onPress={async () => {
+                        setEditSplitDay(dow);
+                        const db = await getDatabase();
+                        const p = await db.getFirstAsync<WorkoutPlan>(
+                          'SELECT * FROM workout_plans WHERE day_of_week = ?',
+                          [dow]
+                        );
+                        if (p) {
+                          setEditSplitName(p.name);
+                          setEditSplitFocus(p.focus);
+                        } else {
+                          setEditSplitName('');
+                          setEditSplitFocus('');
+                        }
+                      }}
+                    >
+                      <Text
+                        style={[
+                          Typography.captionSmall,
+                          {
+                            color: isSel ? '#FFFFFF' : colors.ink,
+                            fontWeight: isSel ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {name.slice(0, 3)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>
+                Split / Workout Name
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                ]}
+                value={editSplitName}
+                onChangeText={setEditSplitName}
+                placeholder="e.g. Chest + Triceps, Legs + Abs, Pull Day"
+                placeholderTextColor={colors.inkMuted}
+                autoCapitalize="words"
+              />
+
+              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4, marginTop: Spacing.xs }]}>
+                Target Muscle Groups (comma separated)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                ]}
+                value={editSplitFocus}
+                onChangeText={setEditSplitFocus}
+                placeholder="e.g. chest, triceps, shoulders"
+                placeholderTextColor={colors.inkMuted}
+                autoCapitalize="none"
+              />
+
+              <View style={styles.modalButtonRow}>
+                <Pressable
+                  style={[styles.modalCancelBtn, { borderColor: colors.line }]}
+                  onPress={() => setEditSplitVisible(false)}
+                >
+                  <Text style={[Typography.button, { color: colors.ink }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalSubmitBtn, { backgroundColor: colors.orange }]}
+                  onPress={handleSaveSplit}
+                >
+                  <Text style={[Typography.button, { color: '#FFFFFF' }]}>Save Split</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      {/* ─── 2. CENTERED MODAL: ADD EXERCISE ─── */}
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={addExModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setAddExModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.centeredModalOverlay}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setAddExModalVisible(false)}
+          />
+          <View style={[styles.centeredModalCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+                  Add Exercise
+                </Text>
+                <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginTop: 2 }]}>
+                  To {activePlanInWorkout?.name || 'Workout Plan'}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setAddExModalVisible(false)}
+                hitSlop={12}
+                style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceMuted }]}
+              >
+                <X size={18} color={colors.ink} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>
+                Exercise Name
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                ]}
+                value={exName}
+                onChangeText={setExName}
+                placeholder="e.g. Incline Dumbbell Press, Cable Fly"
+                placeholderTextColor={colors.inkMuted}
+                autoCapitalize="words"
+              />
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Sets</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                    ]}
+                    value={exSets}
+                    onChangeText={setExSets}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Reps</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                    ]}
+                    value={exReps}
+                    onChangeText={setExReps}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Weight (kg)</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                    ]}
+                    value={exWeight}
+                    onChangeText={setExWeight}
+                    keyboardType="numeric"
+                    placeholder="20"
+                    placeholderTextColor={colors.inkMuted}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.modalButtonRow}>
+                <Pressable
+                  style={[styles.modalCancelBtn, { borderColor: colors.line }]}
+                  onPress={() => setAddExModalVisible(false)}
+                >
+                  <Text style={[Typography.button, { color: colors.ink }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalSubmitBtn, { backgroundColor: colors.orange }]}
+                  onPress={handleAddExercise}
+                >
+                  <Text style={[Typography.button, { color: '#FFFFFF' }]}>Add Exercise</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      {/* ─── 3. CENTERED MODAL: EDIT EXERCISE ─── */}
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={editExModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setEditExModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.centeredModalOverlay}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setEditExModalVisible(false)}
+          />
+          <View style={[styles.centeredModalCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+                  Edit Exercise
+                </Text>
+                <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginTop: 2 }]}>
+                  Modify Prescription
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setEditExModalVisible(false)}
+                hitSlop={12}
+                style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceMuted }]}
+              >
+                <X size={18} color={colors.ink} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>
+                Exercise Name
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                ]}
+                value={editExName}
+                onChangeText={setEditExName}
+                placeholder="e.g. Romanian Deadlift"
+                placeholderTextColor={colors.inkMuted}
+                autoCapitalize="words"
+              />
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Sets</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                    ]}
+                    value={editExSets}
+                    onChangeText={setEditExSets}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Reps</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                    ]}
+                    value={editExReps}
+                    onChangeText={setEditExReps}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 4 }]}>Weight (kg)</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line },
+                    ]}
+                    value={editExWeight}
+                    onChangeText={setEditExWeight}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.modalButtonRow}>
+                <Pressable
+                  style={[styles.modalCancelBtn, { borderColor: colors.line }]}
+                  onPress={() => setEditExModalVisible(false)}
+                >
+                  <Text style={[Typography.button, { color: colors.ink }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalSubmitBtn, { backgroundColor: colors.orange }]}
+                  onPress={handleSaveEditExercise}
+                >
+                  <Text style={[Typography.button, { color: '#FFFFFF' }]}>Update</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      {/* ─── 4. CENTERED MODAL: LOG BODY WEIGHT ─── */}
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={weightModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setWeightModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.centeredModalOverlay}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setWeightModalVisible(false)}
+          />
+          <View style={[styles.centeredModalCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+                  Log Body Weight
+                </Text>
+                <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginTop: 2 }]}>
+                  Progressive Metric Tracking
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setWeightModalVisible(false)}
+                hitSlop={12}
+                style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceMuted }]}
+              >
+                <X size={18} color={colors.ink} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              <Text style={[Typography.caption, { color: colors.inkMuted, marginBottom: 6 }]}>
+                Current Weight in kg
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: colors.canvas, color: colors.ink, borderColor: colors.line, fontSize: 18, fontWeight: '700' },
+                ]}
+                value={weightInput}
+                onChangeText={setWeightInput}
+                keyboardType="numeric"
+                placeholder={latestWeight?.weight_kg ? String(latestWeight.weight_kg) : '55.0'}
+                placeholderTextColor={colors.inkMuted}
+                autoFocus
+              />
+
+              <View style={styles.modalButtonRow}>
+                <Pressable
+                  style={[styles.modalCancelBtn, { borderColor: colors.line }]}
+                  onPress={() => setWeightModalVisible(false)}
+                >
+                  <Text style={[Typography.button, { color: colors.ink }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalSubmitBtn, { backgroundColor: colors.orange }]}
+                  onPress={handleSaveWeight}
+                >
+                  <Text style={[Typography.button, { color: '#FFFFFF' }]}>Save Weight</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Delete Exercise Confirmation Dialog */}
+      <ConfirmDialog
+        visible={deleteExConfirmVisible}
+        title="Delete Exercise"
+        message={`Are you sure you want to remove "${exerciseToDelete?.name}" from this workout plan?`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleConfirmDeleteExercise}
+        onCancel={() => {
+          setDeleteExConfirmVisible(false);
+          setExerciseToDelete(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -802,10 +1363,46 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
   },
+  splitDayBadge: {
+    width: 44,
+    height: 32,
+    borderRadius: Radius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   todayTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: Radius.full,
+  },
+  editIconBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  daySelectorWrapper: {
+    marginBottom: Spacing.base,
+  },
+  daySelectorScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  daySelectorPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  selectedSplitHeaderCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.base,
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    marginBottom: Spacing.base,
   },
   exerciseItem: {
     flexDirection: 'row',
@@ -821,7 +1418,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FCE7D6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.md,
+    marginRight: Spacing.sm,
+  },
+  exActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  iconButtonSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quickLogSetBtn: {
     paddingHorizontal: Spacing.md,
@@ -854,8 +1463,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  sheetContent: {
-    paddingVertical: Spacing.base,
+
+  /* Centered Modal Styles (stays centered above keyboard) */
+  centeredModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+  centeredModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '85%',
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    padding: Spacing.lg,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.base,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScrollContent: {
+    paddingBottom: Spacing.xs,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.base,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: Radius.button,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalSubmitBtn: {
+    flex: 1.4,
+    height: 48,
+    borderRadius: Radius.button,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   input: {
     height: 48,
@@ -865,17 +1532,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: Spacing.base,
   },
-  saveWeightBtn: {
-    height: 48,
-    borderRadius: Radius.button,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   dayPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: Radius.full,
     borderWidth: 1,
-    marginRight: 6,
   },
 });
