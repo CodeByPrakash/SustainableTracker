@@ -35,7 +35,12 @@ fun HomeScreen(
     onToggleSchedule: (String, String) -> Unit,
     onNavigateToAlarm: () -> Unit,
     onNavigateToGym: () -> Unit,
-    onNavigateToAcademics: () -> Unit
+    onNavigateToAcademics: () -> Unit,
+    onNavigateToHabits: () -> Unit = {},
+    onNavigateToSkills: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToWorkout: () -> Unit = onNavigateToGym,
+    onNavigateToStudy: () -> Unit = onNavigateToAcademics
 ) {
     val todayFormatted = remember {
         SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
@@ -72,19 +77,36 @@ fun HomeScreen(
                     )
                 }
 
-                IconButton(
-                    onClick = onNavigateToAlarm,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(DaycraftSurface)
-                        .border(1.dp, DaycraftLine, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Alarm,
-                        contentDescription = "Alarms",
-                        tint = DaycraftOrange
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(
+                        onClick = onNavigateToSettings,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(DaycraftSurface)
+                            .border(1.dp, DaycraftLine, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = DaycraftInkMuted
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onNavigateToAlarm,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(DaycraftSurface)
+                            .border(1.dp, DaycraftLine, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Alarm,
+                            contentDescription = "Alarms",
+                            tint = DaycraftOrange
+                        )
+                    }
                 }
             }
         }
@@ -114,7 +136,7 @@ fun HomeScreen(
                         label = "Start Workout",
                         icon = Icons.Default.FitnessCenter,
                         accentColor = DaycraftOrange,
-                        onClick = onNavigateToGym
+                        onClick = onNavigateToWorkout
                     )
                 }
                 item {
@@ -122,7 +144,23 @@ fun HomeScreen(
                         label = "Focus Study",
                         icon = Icons.Default.MenuBook,
                         accentColor = DaycraftGreen,
-                        onClick = onNavigateToAcademics
+                        onClick = onNavigateToStudy
+                    )
+                }
+                item {
+                    QuickActionPill(
+                        label = "Habits",
+                        icon = Icons.Default.CheckCircle,
+                        accentColor = DaycraftGreen,
+                        onClick = onNavigateToHabits
+                    )
+                }
+                item {
+                    QuickActionPill(
+                        label = "DSA & Skills",
+                        icon = Icons.Default.Code,
+                        accentColor = DaycraftOrange,
+                        onClick = onNavigateToSkills
                     )
                 }
             }

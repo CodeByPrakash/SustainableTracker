@@ -29,6 +29,7 @@ import com.daycraft.app.ui.theme.*
 fun GymScreen(
     plan: WorkoutPlanEntity?,
     exercises: List<ExerciseEntity>,
+    onStartWorkout: () -> Unit = {},
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -106,7 +107,7 @@ fun GymScreen(
                         Spacer(modifier = Modifier.height(18.dp))
 
                         Button(
-                            onClick = { /* Start workout interactive timer */ },
+                            onClick = onStartWorkout,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(52.dp),
