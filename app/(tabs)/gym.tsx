@@ -383,7 +383,7 @@ export default function GymScreen() {
 
         <Pressable
           style={[styles.startWorkoutButton, { backgroundColor: colors.orange }]}
-          onPress={() => router.push('/workout-active')}
+          onPress={() => router.push({ pathname: '/workout-active', params: { dayOfWeek: String(todayDow) } })}
           accessible={true}
           accessibilityRole="button"
           accessibilityLabel="Start training workout"
@@ -421,7 +421,7 @@ export default function GymScreen() {
               </View>
               <Pressable
                 style={[styles.trainPill, { backgroundColor: colors.orange }]}
-                onPress={() => router.push('/workout-active')}
+                onPress={() => router.push({ pathname: '/workout-active', params: { dayOfWeek: String(todayDow) } })}
               >
                 <Text style={[Typography.button, { color: '#FFFFFF' }]}>Start Now</Text>
               </Pressable>
@@ -661,7 +661,7 @@ export default function GymScreen() {
                 </Pressable>
                 <Pressable
                   style={[styles.smallActionBtn, { backgroundColor: colors.orangeSoft }]}
-                  onPress={() => router.push('/workout-active')}
+                  onPress={() => router.push({ pathname: '/workout-active', params: { dayOfWeek: String(selectedDay) } })}
                   accessible={true}
                   accessibilityRole="button"
                   accessibilityLabel="Start workout"
@@ -717,7 +717,7 @@ export default function GymScreen() {
                       </Pressable>
                       <Pressable
                         style={[styles.quickLogSetBtn, { borderColor: colors.orange, backgroundColor: colors.orangeSoft }]}
-                        onPress={() => router.push('/workout-active')}
+                        onPress={() => router.push({ pathname: '/workout-active', params: { dayOfWeek: String(selectedDay) } })}
                         accessible={true}
                         accessibilityRole="button"
                         accessibilityLabel={`Log sets for ${ex.name}`}
