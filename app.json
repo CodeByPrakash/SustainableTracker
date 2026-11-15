@@ -39,7 +39,8 @@
             "./assets/sounds/daycraft_chime.wav"
           ]
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "extra": {
       "router": {

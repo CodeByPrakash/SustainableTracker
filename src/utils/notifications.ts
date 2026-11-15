@@ -7,6 +7,9 @@ import { getToday, formatTime12 } from './dateUtils';
 // Android Notification Channel ID
 export const ANDROID_CHANNEL_ID = 'daycraft_upcoming_todo';
 
+let channelSetupAttempted = false;
+export let isAndroidChannelSupported = true;
+
 // Configure notification behavior to show alert, play sound, and show in Android drawer
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,7 +26,8 @@ Notifications.setNotificationHandler({
  * Configure Android notification channel safely with high importance and audio sound
  */
 export async function setupAndroidNotificationChannel(): Promise<void> {
-  if (Platform.OS === 'android') {
+  if (Platform.OS === 'android' && !channelSetupAttempted) {
+    channelSetupAttempted = true;
     try {
       await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
         name: 'Upcoming Commitments & Reminders',
@@ -33,11 +37,11 @@ export async function setupAndroidNotificationChannel(): Promise<void> {
         lightColor: '#E87935',
         enableVibrate: true,
         showBadge: true,
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-        bypassDnd: false,
       });
-    } catch (err) {
-      console.warn('Notice: Notification channel setup fallback:', err);
+      isAndroidChannelSupported = true;
+    } catch {
+      // In Expo Go on Android, custom notification channels are sandboxed/unsupported for guest apps
+      isAndroidChannelSupported = false;
     }
   }
 }
@@ -132,7 +136,7 @@ export async function syncScheduleNotifications(db: SQLiteDatabase): Promise<num
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: triggerDate,
-            channelId: ANDROID_CHANNEL_ID,
+            ...(isAndroidChannelSupported && Platform.OS === 'android' ? { channelId: ANDROID_CHANNEL_ID } : {}),
           },
         });
         scheduledCount++;
@@ -165,7 +169,7 @@ export async function sendImmediateTestNotification(): Promise<boolean> {
         vibrate: [0, 250, 250, 250],
       },
       trigger: {
-        channelId: ANDROID_CHANNEL_ID,
+        ...(isAndroidChannelSupported && Platform.OS === 'android' ? { channelId: ANDROID_CHANNEL_ID } : {}),
       } as any,
     });
 

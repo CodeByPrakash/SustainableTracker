@@ -6,11 +6,15 @@ import { formatTime12 } from './dateUtils';
 
 export const ALARM_CHANNEL_ID = 'daycraft_wake_alarms';
 
+let alarmChannelAttempted = false;
+export let isAlarmChannelSupported = true;
+
 /**
  * Configure dedicated high-priority alarm notification channel on Android
  */
 export async function setupAlarmNotificationChannel(): Promise<void> {
-  if (Platform.OS === 'android') {
+  if (Platform.OS === 'android' && !alarmChannelAttempted) {
+    alarmChannelAttempted = true;
     try {
       await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
         name: 'Wakeup Alarms',
@@ -20,11 +24,11 @@ export async function setupAlarmNotificationChannel(): Promise<void> {
         lightColor: '#E87935',
         enableVibrate: true,
         showBadge: true,
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-        bypassDnd: true,
       });
-    } catch (err) {
-      console.warn('Notice: Alarm notification channel fallback:', err);
+      isAlarmChannelSupported = true;
+    } catch {
+      // In Expo Go on Android, custom notification channels are sandboxed/unsupported for guest apps
+      isAlarmChannelSupported = false;
     }
   }
 }
@@ -48,7 +52,7 @@ export async function requestAlarmPermissions(): Promise<boolean> {
 
     return finalStatus === 'granted';
   } catch (err) {
-    console.warn('Could not request alarm permissions:', err);
+    console.warn('Notice: Could not request alarm permissions:', err);
     return false;
   }
 }
@@ -113,7 +117,7 @@ export async function syncAlarmNotifications(db: SQLiteDatabase): Promise<number
             weekday: expoWeekday,
             hour,
             minute,
-            channelId: ALARM_CHANNEL_ID,
+            ...(isAlarmChannelSupported && Platform.OS === 'android' ? { channelId: ALARM_CHANNEL_ID } : {}),
           },
         });
         scheduledCount++;
@@ -122,7 +126,7 @@ export async function syncAlarmNotifications(db: SQLiteDatabase): Promise<number
 
     return scheduledCount;
   } catch (err) {
-    console.warn('Could not sync alarm notifications:', err);
+    console.warn('Notice: Could not sync alarm notifications:', err);
     return 0;
   }
 }
@@ -155,10 +159,10 @@ export async function scheduleSnoozeNotification(alarm: AlarmItem): Promise<void
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
-        channelId: ALARM_CHANNEL_ID,
+        ...(isAlarmChannelSupported && Platform.OS === 'android' ? { channelId: ALARM_CHANNEL_ID } : {}),
       },
     });
   } catch (err) {
-    console.warn('Could not schedule snooze notification:', err);
+    console.warn('Notice: Could not schedule snooze notification:', err);
   }
 }
