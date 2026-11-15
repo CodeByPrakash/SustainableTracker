@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Daycraft" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FFF8EF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#FFF8EF</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>
