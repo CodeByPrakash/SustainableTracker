@@ -38,9 +38,17 @@ export const WeeklyBarChart: React.FC<WeeklyBarChartProps> = ({
   const spacing = (chartWidth - barWidth * data.length) / (data.length + 1);
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible={true}
+      accessibilityLabel={`Weekly bar chart: ${data.map(d => `${d.label}: ${d.value} ${d.unit || unit}`).join(', ')}`}
+    >
       {selectedIdx !== null && data[selectedIdx] && (
-        <View style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View
+          style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.line }]}
+          accessible={true}
+          accessibilityLiveRegion="polite"
+        >
           <Text style={[Typography.captionSmall, { color: colors.inkMuted }]}>
             {data[selectedIdx].fullLabel || data[selectedIdx].label}
           </Text>

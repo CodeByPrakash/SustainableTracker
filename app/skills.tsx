@@ -229,6 +229,10 @@ export default function SkillsScreen() {
         <Pressable
           style={[styles.tabBtn, activeTab === 'skills' && { borderBottomColor: colors.skillsChart, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('skills')}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'skills' }}
+          accessibilityLabel={`Technical roadmaps, ${skills.length} skills`}
         >
           <Text
             style={[
@@ -242,6 +246,10 @@ export default function SkillsScreen() {
         <Pressable
           style={[styles.tabBtn, activeTab === 'projects' && { borderBottomColor: colors.skillsChart, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('projects')}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'projects' }}
+          accessibilityLabel={`Engineering projects, ${projects.length} projects`}
         >
           <Text
             style={[
@@ -256,7 +264,7 @@ export default function SkillsScreen() {
 
       {/* Tab Subheader with Add Button */}
       <View style={styles.tabActionHeader}>
-        <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+        <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">
           {activeTab === 'skills' ? 'Tracked Engineering Skills' : 'Portfolio & System Builds'}
         </Text>
         <Pressable
@@ -268,6 +276,10 @@ export default function SkillsScreen() {
               setProjectSheetVisible(true);
             }
           }}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={activeTab === 'skills' ? 'Add new skill' : 'Add new project'}
+          hitSlop={6}
         >
           <Plus size={16} color="#FFFFFF" />
           <Text style={[Typography.captionSmall, { color: '#FFFFFF', fontWeight: '700', marginLeft: 4 }]}>
@@ -307,6 +319,10 @@ export default function SkillsScreen() {
                         setSelectedSkill(skill);
                         setProblemSheetVisible(true);
                       }}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Log DSA problems for ${skill.name}`}
+                      hitSlop={6}
                     >
                       <Text style={[Typography.captionSmall, { color: colors.skillsChart, fontWeight: '700' }]}>
                         + Log DSA
@@ -315,6 +331,10 @@ export default function SkillsScreen() {
                     <Pressable
                       style={styles.deleteIconBtn}
                       onPress={() => setItemToDelete({ type: 'skill', id: skill.id, name: skill.name })}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete ${skill.name}`}
+                      hitSlop={8}
                     >
                       <Trash2 size={16} color={colors.inkMuted} />
                     </Pressable>
@@ -356,6 +376,11 @@ export default function SkillsScreen() {
                         },
                       ]}
                       onPress={() => handleToggleProjectStatus(proj)}
+                      accessible={true}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: proj.status === 'completed' }}
+                      accessibilityLabel={`Project ${proj.name}, status: ${proj.status === 'completed' ? 'completed' : 'in progress'}`}
+                      accessibilityHint="Double tap to toggle completion status"
                     >
                       {proj.status === 'completed' ? (
                         <CheckCircle2 size={20} color={colors.green} />
@@ -380,6 +405,10 @@ export default function SkillsScreen() {
                     <Pressable
                       style={styles.deleteIconBtn}
                       onPress={() => setItemToDelete({ type: 'project', id: proj.id, name: proj.name })}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete project ${proj.name}`}
+                      hitSlop={8}
                     >
                       <Trash2 size={16} color={colors.inkMuted} />
                     </Pressable>

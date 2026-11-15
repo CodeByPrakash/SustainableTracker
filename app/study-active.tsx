@@ -95,13 +95,23 @@ export default function StudyActiveModal() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.canvas }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.line }]}>
-        <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.closeBtn}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Close study session"
+          hitSlop={8}
+        >
           <X size={22} color={colors.ink} />
         </Pressable>
-        <Text style={[Typography.sectionTitle, { color: colors.greenDark }]}>Deep Focus Study</Text>
+        <Text style={[Typography.sectionTitle, { color: colors.greenDark }]} accessibilityRole="header">Deep Focus Study</Text>
         <Pressable
           style={[styles.finishBtn, { backgroundColor: colors.green }]}
           onPress={handleFinish}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Complete and save study session"
         >
           <Text style={[Typography.button, { color: '#FFFFFF' }]}>Complete</Text>
         </Pressable>
@@ -110,7 +120,11 @@ export default function StudyActiveModal() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Timer Hero Display */}
         <View style={[styles.timerCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-          <Text style={[styles.timerDigits, { color: colors.greenDark }]}>
+          <Text
+            style={[styles.timerDigits, { color: colors.greenDark }]}
+            accessible={true}
+            accessibilityLabel={`Elapsed time: ${formatDuration(seconds)}`}
+          >
             {formatDuration(seconds)}
           </Text>
           <Text style={[Typography.caption, { color: colors.inkMuted, marginTop: 4 }]}>
@@ -124,6 +138,9 @@ export default function StudyActiveModal() {
                 { backgroundColor: isRunning ? colors.warning : colors.green },
               ]}
               onPress={() => setIsRunning(!isRunning)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={isRunning ? 'Pause timer' : 'Resume timer'}
             >
               {isRunning ? (
                 <Pause size={24} color="#FFFFFF" fill="#FFFFFF" />
@@ -134,6 +151,9 @@ export default function StudyActiveModal() {
             <Pressable
               style={[styles.resetBtn, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => setSeconds(0)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Reset timer to zero"
             >
               <RotateCcw size={20} color={colors.ink} />
             </Pressable>
@@ -150,6 +170,10 @@ export default function StudyActiveModal() {
             return (
               <Pressable
                 key={s.id}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={`Subject: ${s.name}`}
                 style={[
                   styles.pill,
                   {
@@ -182,6 +206,10 @@ export default function StudyActiveModal() {
             return (
               <Pressable
                 key={t}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={`Focus type: ${t.replace('_', ' ')}`}
                 style={[
                   styles.typePill,
                   {

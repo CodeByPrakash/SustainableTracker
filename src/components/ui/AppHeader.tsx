@@ -40,6 +40,9 @@ export function AppHeader({
             <Pressable
               onPress={onBack}
               hitSlop={8}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
               style={({ pressed }) => [
                 styles.backButton,
                 { opacity: pressed ? 0.6 : 1 },

@@ -28,7 +28,13 @@ export function ProgressRing({
   const strokeDashoffset = circumference - (clampedProgress / 100) * circumference;
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <View
+      style={[styles.container, { width: size, height: size }]}
+      accessible={true}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(clampedProgress) }}
+      accessibilityLabel={`${label || 'Progress'}: ${Math.round(clampedProgress)} percent${sublabel ? `, ${sublabel}` : ''}`}
+    >
       <Svg width={size} height={size}>
         {/* Background trail circle */}
         <Circle

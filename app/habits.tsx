@@ -208,6 +208,10 @@ export default function HabitsScreen() {
         <Pressable
           style={[styles.tabBtn, activeTab === 'checklist' && { borderBottomColor: colors.orange, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('checklist')}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'checklist' }}
+          accessibilityLabel="Daily habits checklist"
         >
           <Text
             style={[
@@ -221,6 +225,10 @@ export default function HabitsScreen() {
         <Pressable
           style={[styles.tabBtn, activeTab === 'skincare' && { borderBottomColor: colors.orange, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('skincare')}
+          accessible={true}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'skincare' }}
+          accessibilityLabel="Skincare protocol"
         >
           <Text
             style={[
@@ -235,11 +243,15 @@ export default function HabitsScreen() {
 
       {/* Subheader Action Bar */}
       <View style={styles.tabActionHeader}>
-        <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+        <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">
           {activeTab === 'checklist' ? "Today's Routine Checklists" : 'Dermatologist-Clean Protocol'}
         </Text>
         <Pressable
           style={[styles.addBtn, { backgroundColor: colors.orange }]}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={activeTab === 'checklist' ? 'Add habit' : 'Add product'}
+          hitSlop={6}
           onPress={() => {
             if (activeTab === 'checklist') {
               setHabitSheetVisible(true);
@@ -303,6 +315,10 @@ export default function HabitsScreen() {
                               <Pressable
                                 style={styles.trashBtn}
                                 onPress={() => setItemToDelete({ type: 'habit', id: h.id, name: h.name })}
+                                accessible={true}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Delete habit ${h.name}`}
+                                hitSlop={8}
                               >
                                 <Trash2 size={16} color={colors.inkMuted} />
                               </Pressable>
@@ -354,6 +370,10 @@ export default function HabitsScreen() {
                       <Pressable
                         style={styles.trashBtn}
                         onPress={() => setItemToDelete({ type: 'skincare', id: prod.id, name: prod.name })}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete product ${prod.name}`}
+                        hitSlop={8}
                       >
                         <Trash2 size={16} color={colors.inkMuted} />
                       </Pressable>
@@ -404,6 +424,10 @@ export default function HabitsScreen() {
                       <Pressable
                         style={styles.trashBtn}
                         onPress={() => setItemToDelete({ type: 'skincare', id: prod.id, name: prod.name })}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete product ${prod.name}`}
+                        hitSlop={8}
                       >
                         <Trash2 size={16} color={colors.inkMuted} />
                       </Pressable>

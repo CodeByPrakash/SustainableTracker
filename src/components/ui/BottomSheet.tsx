@@ -8,6 +8,8 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../theme';
 import { Typography, Spacing, Radius } from '../../theme';
@@ -64,68 +66,83 @@ export function BottomSheet({ visible, onClose, title, children }: BottomSheetPr
       animationType="none"
       statusBarTranslucent
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
-      {/* Backdrop */}
-      <Animated.View
-        style={[styles.backdrop, { opacity: backdropOpacity }]}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
-
-      {/* Sheet */}
-      <Animated.View
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: colors.surface,
-            transform: [{ translateY }],
-          },
-        ]}
-      >
-        {/* Handle bar */}
-        <View style={styles.handleRow}>
-          <View style={[styles.handle, { backgroundColor: colors.line }]} />
-        </View>
-
-        {title ? (
-          <Text
-            style={[
-              Typography.sectionTitle,
-              {
-                color: colors.ink,
-                paddingHorizontal: Spacing.screenH,
-                marginBottom: Spacing.base,
-              },
-            ]}
-          >
-            {title}
-          </Text>
-        ) : null}
-
-        <ScrollView
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          style={styles.scroll}
+        {/* Backdrop */}
+        <Animated.View
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
         >
-          {children}
-        </ScrollView>
-      </Animated.View>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Close sheet"
+          />
+        </Animated.View>
+
+        {/* Sheet */}
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.surface,
+              transform: [{ translateY }],
+            },
+          ]}
+        >
+          {/* Handle bar */}
+          <View style={styles.handleRow}>
+            <View style={[styles.handle, { backgroundColor: colors.line }]} />
+          </View>
+
+          {title ? (
+            <Text
+              style={[
+                Typography.sectionTitle,
+                {
+                  color: colors.ink,
+                  paddingHorizontal: Spacing.screenH,
+                  marginBottom: Spacing.base,
+                },
+              ]}
+              accessibilityRole="header"
+            >
+              {title}
+            </Text>
+          ) : null}
+
+          <ScrollView
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            style={styles.scroll}
+          >
+            {children}
+          </ScrollView>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   backdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    maxHeight: SCREEN_HEIGHT * 0.85,
+    width: '100%',
+    maxHeight: SCREEN_HEIGHT * 0.88,
     borderTopLeftRadius: Radius.lg,
     borderTopRightRadius: Radius.lg,
   },

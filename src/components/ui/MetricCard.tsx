@@ -30,6 +30,9 @@ export function MetricCard({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      accessible={true}
+      accessibilityRole={onPress ? 'button' : 'summary'}
+      accessibilityLabel={`${title}: ${value}${subtitle ? `, ${subtitle}` : ''}`}
       style={({ pressed }) => [
         styles.card,
         {

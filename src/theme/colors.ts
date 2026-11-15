@@ -33,7 +33,7 @@ export const LightColors: ColorTokens = {
   surface: '#FFFFFF',
   surfaceMuted: '#F3E8DA',
   ink: '#202A3B',
-  inkMuted: '#73716D',
+  inkMuted: '#585652',
   line: '#E8DDD0',
 
   // Gym — Orange
@@ -55,7 +55,7 @@ export const LightColors: ColorTokens = {
   skillsChart: '#54718C',
   habitsChart: '#C58A28',
   chartGrid: '#E8DDD0',
-  chartAxis: '#73716D',
+  chartAxis: '#585652',
 };
 
 export const DarkColors: ColorTokens = {
@@ -63,7 +63,7 @@ export const DarkColors: ColorTokens = {
   surface: '#202734',
   surfaceMuted: '#293344',
   ink: '#F7F3EC',
-  inkMuted: '#B5B7BA',
+  inkMuted: '#C2C4CA',
   line: '#354052',
 
   // Gym — Orange (vivid for dark)
@@ -85,5 +85,5 @@ export const DarkColors: ColorTokens = {
   skillsChart: '#7A9AB8',
   habitsChart: '#D4A84B',
   chartGrid: '#354052',
-  chartAxis: '#B5B7BA',
+  chartAxis: '#C2C4CA',
 };

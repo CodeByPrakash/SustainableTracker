@@ -115,6 +115,10 @@ export default function StatsScreen() {
         <Pressable
           style={[styles.infoToggleBtn, { backgroundColor: colors.surface, borderColor: colors.line }]}
           onPress={() => setShowFormulaInfo(!showFormulaInfo)}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={showFormulaInfo ? "Hide formula calculation details" : "Show formula calculation details"}
+          hitSlop={8}
         >
           <Info size={18} color={showFormulaInfo ? colors.orange : colors.inkMuted} />
         </Pressable>
@@ -127,6 +131,11 @@ export default function StatsScreen() {
           return (
             <Pressable
               key={p}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`Period: ${p === '3months' ? '3 Months' : p}`}
+              hitSlop={6}
               style={[
                 styles.periodPill,
                 {
@@ -220,6 +229,11 @@ export default function StatsScreen() {
             return (
               <Pressable
                 key={c}
+                accessible={true}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={`Category filter: ${c}`}
+                hitSlop={6}
                 style={[
                   styles.catPill,
                   {

@@ -247,6 +247,10 @@ export default function PlanScreen() {
           <Pressable
             style={[styles.resetHeaderBtn, { backgroundColor: colors.surface, borderColor: colors.line }]}
             onPress={handlePromptReset}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Reset agenda checkboxes"
+            hitSlop={6}
           >
             <RotateCcw size={14} color={colors.ink} />
             <Text style={[Typography.captionSmall, { color: colors.ink, fontWeight: '600', marginLeft: 4 }]}>
@@ -256,6 +260,10 @@ export default function PlanScreen() {
           <Pressable
             style={[styles.addButton, { backgroundColor: colors.orange }]}
             onPress={handleOpenNew}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Add new commitment"
+            hitSlop={6}
           >
             <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
           </Pressable>
@@ -270,6 +278,10 @@ export default function PlanScreen() {
           return (
             <Pressable
               key={dayNum}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`${DAY_NAMES[idx]}`}
               style={[
                 styles.dayTab,
                 isSelected && { backgroundColor: colors.ink, borderColor: colors.ink },
@@ -381,6 +393,10 @@ export default function PlanScreen() {
               </View>
               <Pressable
                 style={styles.deleteAction}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${block.title}`}
+                hitSlop={8}
                 onPress={() => {
                   setBlockToDelete(block.id);
                   setDeleteConfirmOpen(true);
@@ -452,6 +468,10 @@ export default function PlanScreen() {
               return (
                 <Pressable
                   key={cat}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`Category: ${cat}`}
                   style={[
                     styles.catPill,
                     {
@@ -548,6 +568,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: Radius.full,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
   },
   scrollContent: {
     paddingHorizontal: Spacing.screenH,

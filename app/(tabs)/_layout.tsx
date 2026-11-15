@@ -36,6 +36,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarActiveTintColor: colors.ink,
+          tabBarAccessibilityLabel: 'Home tab',
           tabBarIcon: ({ color, size }) => <House size={22} color={color} strokeWidth={2} />,
         }}
       />
@@ -44,6 +45,7 @@ export default function TabLayout() {
         options={{
           title: 'Plan',
           tabBarActiveTintColor: colors.ink,
+          tabBarAccessibilityLabel: 'Planner and timetable tab',
           tabBarIcon: ({ color, size }) => <CalendarDays size={22} color={color} strokeWidth={2} />,
         }}
       />
@@ -52,6 +54,7 @@ export default function TabLayout() {
         options={{
           title: 'Gym',
           tabBarActiveTintColor: colors.orange,
+          tabBarAccessibilityLabel: 'Gym workout workspace tab',
           tabBarIcon: ({ color, size }) => <Dumbbell size={22} color={color} strokeWidth={2} />,
         }}
       />
@@ -60,6 +63,7 @@ export default function TabLayout() {
         options={{
           title: 'Academics',
           tabBarActiveTintColor: colors.green,
+          tabBarAccessibilityLabel: 'Academics and curriculum tab',
           tabBarIcon: ({ color, size }) => <BookOpen size={22} color={color} strokeWidth={2} />,
         }}
       />
@@ -68,6 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Stats',
           tabBarActiveTintColor: colors.ink,
+          tabBarAccessibilityLabel: 'Consistency statistics and analytics tab',
           tabBarIcon: ({ color, size }) => <ChartNoAxesCombined size={22} color={color} strokeWidth={2} />,
         }}
       />

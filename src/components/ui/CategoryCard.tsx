@@ -26,6 +26,10 @@ export function CategoryCard({
   return (
     <Pressable
       onPress={onPress}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${status}`}
+      accessibilityHint={`Opens ${title}`}
       style={({ pressed }) => [
         styles.card,
         {

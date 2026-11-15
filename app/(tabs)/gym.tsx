@@ -384,6 +384,10 @@ export default function GymScreen() {
         <Pressable
           style={[styles.startWorkoutButton, { backgroundColor: colors.orange }]}
           onPress={() => router.push('/workout-active')}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Start training workout"
+          hitSlop={8}
         >
           <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
           <Text style={[Typography.button, { color: '#FFFFFF', marginLeft: 6 }]}>Train</Text>
@@ -458,6 +462,10 @@ export default function GymScreen() {
               <Pressable
                 style={[styles.recalibrateBtn, { backgroundColor: colors.orange }]}
                 onPress={handleRecalibrate55Kg}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Recalibrate default weights for 55 kilogram body weight"
+                hitSlop={6}
               >
                 <RefreshCw size={12} color="#FFFFFF" />
                 <Text style={[Typography.captionSmall, { color: '#FFFFFF', fontWeight: '700', marginLeft: 4 }]}>
@@ -469,7 +477,7 @@ export default function GymScreen() {
             {/* Weekly Training Split (100% Real & Editable) */}
             <View style={[styles.sectionHeader, { marginTop: Spacing.sm }]}>
               <View>
-                <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Weekly Training Split</Text>
+                <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Weekly Training Split</Text>
                 <Text style={[Typography.captionSmall, { color: colors.inkMuted, marginTop: 1 }]}>
                   Tap any day or pencil to customize your routine
                 </Text>
@@ -477,6 +485,10 @@ export default function GymScreen() {
               <Pressable
                 style={[styles.smallActionBtn, { backgroundColor: colors.orangeSoft }]}
                 onPress={() => openEditSplitForDay(todayDow)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Edit today's training split"
+                hitSlop={6}
               >
                 <Edit2 size={13} color={colors.orangeDark} />
                 <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginLeft: 4 }]}>
@@ -496,6 +508,10 @@ export default function GymScreen() {
                 return (
                   <Pressable
                     key={dayName}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${dayName}: ${planName}, focus: ${planFocus}${isToday ? ", today's split" : ''}`}
+                    accessibilityHint="Double tap to edit this day's split"
                     style={({ pressed }) => [
                       styles.splitRow,
                       { borderBottomColor: colors.line },
@@ -554,6 +570,11 @@ export default function GymScreen() {
                   return (
                     <Pressable
                       key={name}
+                      accessible={true}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: isSel }}
+                      accessibilityLabel={`${name}${isToday ? ', today' : ''}`}
+                      hitSlop={6}
                       style={[
                         styles.daySelectorPill,
                         {
@@ -607,6 +628,10 @@ export default function GymScreen() {
               <Pressable
                 style={[styles.smallActionBtn, { backgroundColor: colors.surfaceMuted, borderWidth: 1, borderColor: colors.line }]}
                 onPress={() => openEditSplitForDay(selectedDay)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Edit split for selected day"
+                hitSlop={6}
               >
                 <Edit2 size={13} color={colors.ink} />
                 <Text style={[Typography.captionSmall, { color: colors.ink, fontWeight: '600', marginLeft: 4 }]}>
@@ -617,13 +642,17 @@ export default function GymScreen() {
 
             {/* Action Bar: Add Exercise & Start */}
             <View style={styles.sectionHeader}>
-              <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
+              <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">
                 Prescribed Exercises ({activePlanInWorkout?.exercises?.length || 0})
               </Text>
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 <Pressable
                   style={[styles.smallActionBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.orange }]}
                   onPress={openAddExercise}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add exercise"
+                  hitSlop={6}
                 >
                   <Plus size={14} color={colors.orange} />
                   <Text style={[Typography.captionSmall, { color: colors.orange, fontWeight: '700', marginLeft: 4 }]}>
@@ -633,6 +662,10 @@ export default function GymScreen() {
                 <Pressable
                   style={[styles.smallActionBtn, { backgroundColor: colors.orangeSoft }]}
                   onPress={() => router.push('/workout-active')}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Start workout"
+                  hitSlop={6}
                 >
                   <Play size={14} color={colors.orangeDark} />
                   <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700', marginLeft: 4 }]}>
@@ -665,6 +698,9 @@ export default function GymScreen() {
                       <Pressable
                         style={[styles.iconButtonSmall, { backgroundColor: colors.surfaceMuted }]}
                         onPress={() => openEditExercise(ex)}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit ${ex.name}`}
                         hitSlop={8}
                       >
                         <Edit2 size={13} color={colors.ink} />
@@ -672,6 +708,9 @@ export default function GymScreen() {
                       <Pressable
                         style={[styles.iconButtonSmall, { backgroundColor: colors.surfaceMuted }]}
                         onPress={() => promptDeleteExercise(ex)}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete ${ex.name}`}
                         hitSlop={8}
                       >
                         <Trash2 size={13} color={colors.danger} />
@@ -679,6 +718,10 @@ export default function GymScreen() {
                       <Pressable
                         style={[styles.quickLogSetBtn, { borderColor: colors.orange, backgroundColor: colors.orangeSoft }]}
                         onPress={() => router.push('/workout-active')}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Log sets for ${ex.name}`}
+                        hitSlop={6}
                       >
                         <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700' }]}>Log</Text>
                       </Pressable>

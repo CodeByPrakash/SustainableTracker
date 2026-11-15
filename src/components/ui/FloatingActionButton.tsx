@@ -8,16 +8,21 @@ interface FloatingActionButtonProps {
   icon: LucideIcon;
   onPress: () => void;
   color: string;
+  accessibilityLabel?: string;
 }
 
 export function FloatingActionButton({
   icon: Icon,
   onPress,
   color,
+  accessibilityLabel = 'Add',
 }: FloatingActionButtonProps) {
   return (
     <Pressable
       onPress={onPress}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.fab,
         {

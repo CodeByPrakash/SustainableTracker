@@ -153,6 +153,9 @@ export default function HealthScreen() {
             <Pressable
               style={[styles.waterPill, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => handleAddWater(250)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 250 milliliters of water"
             >
               <Droplets size={16} color="#3B82F6" />
               <Text style={[Typography.button, { color: colors.ink, marginLeft: 4 }]}>+250 ml</Text>
@@ -160,6 +163,9 @@ export default function HealthScreen() {
             <Pressable
               style={[styles.waterPill, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => handleAddWater(500)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 500 milliliters of water"
             >
               <Droplets size={16} color="#3B82F6" />
               <Text style={[Typography.button, { color: colors.ink, marginLeft: 4 }]}>+500 ml</Text>
@@ -167,6 +173,9 @@ export default function HealthScreen() {
             <Pressable
               style={[styles.waterPill, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => handleAddWater(1000)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 1 liter of water"
             >
               <Droplets size={16} color="#3B82F6" />
               <Text style={[Typography.button, { color: colors.ink, marginLeft: 4 }]}>+1 L</Text>
@@ -176,8 +185,14 @@ export default function HealthScreen() {
 
         {/* Sleep Logging Section */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Sleep Logs</Text>
-          <Pressable onPress={() => setSleepSheetVisible(true)}>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Sleep Logs</Text>
+          <Pressable
+            onPress={() => setSleepSheetVisible(true)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Log last night's sleep"
+            hitSlop={8}
+          >
             <Text style={[Typography.caption, { color: colors.orange, fontWeight: '600' }]}>+ Log Sleep</Text>
           </Pressable>
         </View>

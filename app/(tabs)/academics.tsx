@@ -333,6 +333,10 @@ export default function AcademicsScreen() {
         <Pressable
           style={[styles.focusButton, { backgroundColor: colors.green, flexShrink: 0 }]}
           onPress={() => router.push('/study-active')}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Launch deep work focus study session"
+          hitSlop={8}
         >
           <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
           <Text style={[Typography.button, { color: '#FFFFFF', marginLeft: 4 }]}>Focus</Text>
@@ -429,6 +433,10 @@ export default function AcademicsScreen() {
                 <Pressable
                   style={[styles.smallActionBtn, { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1 }]}
                   onPress={handleToggleCollapseAll}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={allUnitsCollapsed ? 'Expand all units' : 'Collapse all units'}
+                  hitSlop={6}
                 >
                   <Layers size={13} color={colors.ink} />
                   <Text style={[Typography.captionSmall, { color: colors.ink, fontWeight: '600', marginLeft: 4 }]}>
@@ -438,6 +446,10 @@ export default function AcademicsScreen() {
                 <Pressable
                   style={[styles.smallActionBtn, { backgroundColor: colors.greenSoft }]}
                   onPress={() => setSubjectSheetVisible(true)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add subject"
+                  hitSlop={6}
                 >
                   <Plus size={14} color={colors.greenDark} />
                   <Text style={[Typography.captionSmall, { color: colors.greenDark, fontWeight: '700', marginLeft: 4 }]}>
@@ -473,6 +485,11 @@ export default function AcademicsScreen() {
                       AppHaptics.selection();
                       toggleSubjectCollapse(subj.id);
                     }}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: !isSubjCollapsed }}
+                    accessibilityLabel={`${subj.name}, ${unitEntries.length} units, ${completedCount} of ${topics.length} topics completed`}
+                    accessibilityHint="Double tap to expand or collapse subject details"
                   >
                     <View style={{ flex: 1, marginRight: Spacing.sm }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -498,6 +515,10 @@ export default function AcademicsScreen() {
                           setTargetSubjId(subj.id);
                           setTopicSheetVisible(true);
                         }}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add topic to ${subj.name}`}
+                        hitSlop={6}
                       >
                         <Plus size={12} color={colors.ink} />
                         <Text style={[Typography.captionSmall, { color: colors.ink, fontWeight: '600', marginLeft: 2 }]}>
@@ -510,6 +531,10 @@ export default function AcademicsScreen() {
                           e.stopPropagation();
                           handleDeleteSubject(subj.id);
                         }}
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete subject ${subj.name}`}
+                        hitSlop={8}
                       >
                         <AlertCircle size={16} color={colors.danger} />
                       </Pressable>
@@ -580,6 +605,11 @@ export default function AcademicsScreen() {
                                   AppHaptics.selection();
                                   toggleUnitCollapse(subj.id, unitName);
                                 }}
+                                accessible={true}
+                                accessibilityRole="button"
+                                accessibilityState={{ expanded: !isUnitCollapsed }}
+                                accessibilityLabel={`${unitName}, ${unitDoneCount} of ${unitTopics.length} topics completed`}
+                                accessibilityHint="Double tap to expand or collapse topics in this unit"
                               >
                                 <View style={styles.unitTitleRow}>
                                   <View
@@ -666,6 +696,11 @@ export default function AcademicsScreen() {
                                           AppHaptics.selection();
                                           handleCycleTopicStatus(t);
                                         }}
+                                        accessible={true}
+                                        accessibilityRole="checkbox"
+                                        accessibilityState={{ checked: isDone }}
+                                        accessibilityLabel={`${t.name}, status: ${t.status.replace('_', ' ')}`}
+                                        accessibilityHint="Double tap to cycle status between not started, in progress, and completed"
                                       >
                                         <View style={styles.topicIndicator}>
                                           {isDone ? (
@@ -830,6 +865,11 @@ export default function AcademicsScreen() {
                     key={item.id}
                     style={[styles.assignmentRow, { borderBottomColor: colors.line }]}
                     onPress={() => handleToggleAssignment(item)}
+                    accessible={true}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isCompleted }}
+                    accessibilityLabel={`${item.title}, due ${item.due_date || 'No date'}, priority ${item.priority}, ${isCompleted ? 'completed' : 'pending'}`}
+                    accessibilityHint="Double tap to toggle assignment completion"
                   >
                     <View style={{ marginRight: Spacing.sm }}>
                       {isCompleted ? (

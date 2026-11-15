@@ -34,8 +34,15 @@ export function ConfirmDialog({
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onCancel}
+      accessibilityViewIsModal={true}
     >
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <Pressable
+        style={styles.backdrop}
+        onPress={onCancel}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss dialog"
+      >
         <Pressable
           style={[
             styles.card,
@@ -45,6 +52,8 @@ export function ConfirmDialog({
             },
           ]}
           onPress={(e) => e.stopPropagation()}
+          accessible={true}
+          accessibilityRole="alert"
         >
           <Text style={[Typography.sectionTitle, { color: colors.ink }]}>
             {title}
@@ -62,6 +71,9 @@ export function ConfirmDialog({
             {/* Cancel */}
             <Pressable
               onPress={onCancel}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={cancelLabel}
               style={({ pressed }) => [
                 styles.button,
                 styles.cancelButton,
@@ -79,6 +91,9 @@ export function ConfirmDialog({
             {/* Confirm */}
             <Pressable
               onPress={onConfirm}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={confirmLabel}
               style={({ pressed }) => [
                 styles.button,
                 styles.confirmButton,

@@ -52,9 +52,17 @@ export const ConsistencyHeatmap: React.FC<ConsistencyHeatmapProps> = ({
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible={true}
+      accessibilityLabel={`Consistency heatmap chart, showing ${days.length} days of history`}
+    >
       {selectedDay && (
-        <View style={[styles.infoBanner, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View
+          style={[styles.infoBanner, { backgroundColor: colors.surface, borderColor: colors.line }]}
+          accessible={true}
+          accessibilityLiveRegion="polite"
+        >
           <Text style={[Typography.captionSmall, { color: colors.ink }]}>
             {selectedDay.label || `${selectedDay.date}: ${selectedDay.status}`}
           </Text>
@@ -63,7 +71,7 @@ export const ConsistencyHeatmap: React.FC<ConsistencyHeatmapProps> = ({
 
       <View style={styles.gridRow}>
         {/* Day-of-week labels */}
-        <View style={styles.labelCol}>
+        <View style={styles.labelCol} importantForAccessibility="no-hide-descendants">
           {dayLabels.map((lbl, i) => (
             <Text key={i} style={[styles.dayLabel, { color: colors.inkMuted }]}>
               {lbl}
@@ -81,6 +89,11 @@ export const ConsistencyHeatmap: React.FC<ConsistencyHeatmapProps> = ({
                   <Pressable
                     key={rowIdx}
                     onPress={() => setSelectedDay(isSelected ? null : day)}
+                    hitSlop={6}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${day.date}: ${day.status}`}
+                    accessibilityHint="Double tap to see date details"
                     style={[
                       styles.cell,
                       {

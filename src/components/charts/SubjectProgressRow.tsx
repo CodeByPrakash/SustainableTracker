@@ -22,7 +22,13 @@ export const SubjectProgressRow: React.FC<SubjectProgressRowProps> = ({
   const percentage = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible={true}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: totalTopics, now: completedTopics }}
+      accessibilityLabel={`${subjectName}${code ? ` (${code})` : ''}: ${percentage}% completed, ${completedTopics} of ${totalTopics} topics`}
+    >
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
           <Text style={[Typography.bodyMedium, { color: colors.ink }]}>{subjectName}</Text>

@@ -181,10 +181,21 @@ export default function WorkoutActiveModal() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.canvas }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.line }]}>
-        <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.closeBtn}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel workout"
+          hitSlop={8}
+        >
           <X size={22} color={colors.ink} />
         </Pressable>
-        <View style={styles.timerBadge}>
+        <View
+          style={styles.timerBadge}
+          accessible={true}
+          accessibilityLabel={`Workout duration: ${formatDuration(sessionDuration)}`}
+        >
           <Timer size={16} color={colors.orange} />
           <Text style={[Typography.sectionTitle, { color: colors.orange, marginLeft: 6 }]}>
             {formatDuration(sessionDuration)}
@@ -193,6 +204,9 @@ export default function WorkoutActiveModal() {
         <Pressable
           style={[styles.finishBtn, { backgroundColor: colors.orange }]}
           onPress={handleFinishWorkout}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Finish and log workout"
         >
           <Text style={[Typography.button, { color: '#FFFFFF' }]}>Finish</Text>
         </Pressable>
@@ -200,7 +214,11 @@ export default function WorkoutActiveModal() {
 
       {/* Rest Timer Banner */}
       {restTimerActive && (
-        <View style={[styles.restBanner, { backgroundColor: colors.orangeSoft, borderColor: colors.orange }]}>
+        <View
+          style={[styles.restBanner, { backgroundColor: colors.orangeSoft, borderColor: colors.orange }]}
+          accessible={true}
+          accessibilityLiveRegion="polite"
+        >
           <View style={styles.restTextRow}>
             <Flame size={18} color={colors.orangeDark} />
             <Text style={[Typography.bodyMedium, { color: colors.orangeDark, marginLeft: 6 }]}>
@@ -208,10 +226,22 @@ export default function WorkoutActiveModal() {
             </Text>
           </View>
           <View style={styles.restActions}>
-            <Pressable onPress={() => startRestTimer(restTimerSeconds + 30)} style={styles.restPill}>
+            <Pressable
+              onPress={() => startRestTimer(restTimerSeconds + 30)}
+              style={styles.restPill}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 30 seconds to rest timer"
+            >
               <Text style={[Typography.captionSmall, { color: colors.orangeDark, fontWeight: '700' }]}>+30s</Text>
             </Pressable>
-            <Pressable onPress={stopRestTimer} style={[styles.restPill, { backgroundColor: colors.orange }]}>
+            <Pressable
+              onPress={stopRestTimer}
+              style={[styles.restPill, { backgroundColor: colors.orange }]}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Skip rest timer"
+            >
               <Text style={[Typography.captionSmall, { color: '#FFFFFF', fontWeight: '700' }]}>Skip</Text>
             </Pressable>
           </View>
@@ -283,13 +313,26 @@ export default function WorkoutActiveModal() {
                     },
                   ]}
                   onPress={() => handleToggleSet(exIdx, sIdx)}
+                  accessible={true}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: s.completed }}
+                  accessibilityLabel={`Set ${s.setNumber}: ${s.weight} kilograms, ${s.reps} reps, ${s.completed ? 'completed' : 'incomplete'}`}
+                  accessibilityHint="Double tap to toggle set completion"
+                  hitSlop={6}
                 >
                   {s.completed && <Check size={16} color="#FFFFFF" strokeWidth={3} />}
                 </Pressable>
               </View>
             ))}
 
-            <Pressable style={styles.addSetBtn} onPress={() => handleAddSet(exIdx)}>
+            <Pressable
+              style={styles.addSetBtn}
+              onPress={() => handleAddSet(exIdx)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Add set to ${ex.name}`}
+              hitSlop={6}
+            >
               <Plus size={14} color={colors.orange} />
               <Text style={[Typography.captionSmall, { color: colors.orange, fontWeight: '700', marginLeft: 4 }]}>
                 Add Set

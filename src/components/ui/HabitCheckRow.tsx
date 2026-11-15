@@ -128,8 +128,16 @@ export function HabitCheckRow({
       </Text>
       <Pressable
         onPress={handleToggle}
-        hitSlop={10}
-        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        hitSlop={8}
+        accessible={true}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: status === 'done' }}
+        accessibilityLabel={`${name}, currently ${status}`}
+        accessibilityHint="Double tap to cycle status between done, missed, and pending"
+        style={({ pressed }) => [
+          styles.toggleTarget,
+          { opacity: pressed ? 0.6 : 1 },
+        ]}
       >
         {renderStatusIcon()}
       </Pressable>
@@ -141,9 +149,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    minHeight: 52,
+  },
+  toggleTarget: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   colorDot: {
     width: 8,

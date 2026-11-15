@@ -30,6 +30,10 @@ export function TaskRow({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${time}, ${category}, ${done ? 'completed' : 'pending'}`}
+      accessibilityHint={onPress ? 'Double tap to view or edit commitment' : undefined}
       style={({ pressed }) => [
         styles.row,
         {
@@ -81,16 +85,27 @@ export function TaskRow({
       <Pressable
         onPress={onToggle}
         hitSlop={8}
+        accessible={true}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: done }}
+        accessibilityLabel={`${title}: ${done ? 'Completed' : 'Incomplete'}`}
+        accessibilityHint="Double tap to toggle task completion"
         style={({ pressed }) => [
-          styles.checkbox,
-          {
-            borderColor: done ? colors.success : colors.line,
-            backgroundColor: done ? colors.success : 'transparent',
-            opacity: pressed ? 0.7 : 1,
-          },
+          styles.checkboxWrap,
+          { opacity: pressed ? 0.7 : 1 },
         ]}
       >
-        {done && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
+        <View
+          style={[
+            styles.checkbox,
+            {
+              borderColor: done ? colors.success : colors.line,
+              backgroundColor: done ? colors.success : 'transparent',
+            },
+          ]}
+        >
+          {done && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
+        </View>
       </Pressable>
     </Pressable>
   );
@@ -100,9 +115,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    minHeight: 52,
   },
   timeColumn: {
     width: 52,
@@ -110,7 +126,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginRight: Spacing.md,
+    marginRight: Spacing.sm,
+  },
+  checkboxWrap: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   checkbox: {
     width: 24,

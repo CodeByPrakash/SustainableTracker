@@ -63,9 +63,17 @@ export const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const areaD = `${pathD} L ${points[points.length - 1].x} ${height - 10} L ${points[0].x} ${height - 10} Z`;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible={true}
+      accessibilityLabel={`Trend line chart with ${data.length} records. Latest value: ${data[data.length - 1]?.value} ${unit}`}
+    >
       {selectedIdx !== null && data[selectedIdx] && (
-        <View style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View
+          style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.line }]}
+          accessible={true}
+          accessibilityLiveRegion="polite"
+        >
           <Text style={[Typography.captionSmall, { color: colors.inkMuted }]}>
             {data[selectedIdx].label}
           </Text>

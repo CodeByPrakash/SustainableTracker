@@ -26,6 +26,10 @@ export function TabBar({ tabs, activeTab, onTabChange, accentColor }: TabBarProp
             <Pressable
               key={tab}
               onPress={() => onTabChange(index)}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={`${tab} tab`}
               style={({ pressed }) => [
                 styles.tab,
                 {
@@ -62,5 +66,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     borderBottomWidth: 2,
     marginRight: Spacing.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
 });

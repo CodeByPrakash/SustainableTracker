@@ -171,6 +171,9 @@ export default function HomeScreen() {
             <Pressable
               style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.line }]}
               onPress={() => router.push('/settings')}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
             >
               <Settings size={20} color={colors.ink} strokeWidth={2} />
             </Pressable>
@@ -178,7 +181,12 @@ export default function HomeScreen() {
         </View>
 
         {/* Daily Progress Card */}
-        <View style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View
+          style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.line }]}
+          accessible={true}
+          accessibilityRole="summary"
+          accessibilityLabel={`Today's progress: ${progressPercent} percent, ${completedTasks} of ${totalTasks} commitments completed`}
+        >
           <View style={styles.progressInfo}>
             <View style={styles.progressBadgeRow}>
               <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Today’s Progress</Text>
@@ -208,7 +216,7 @@ export default function HomeScreen() {
 
         {/* Quick Actions Row */}
         <View style={styles.sectionHeader}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Quick Actions</Text>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Quick Actions</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsScroll}>
           <QuickActionPill
@@ -239,7 +247,7 @@ export default function HomeScreen() {
 
         {/* Category Shortcuts Grid */}
         <View style={styles.sectionHeader}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Workspaces</Text>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Workspaces</Text>
         </View>
         <View style={styles.categoryGrid}>
           <CategoryCard
@@ -278,8 +286,14 @@ export default function HomeScreen() {
 
         {/* Today's Schedule Agenda */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.lg }]}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Today's Schedule</Text>
-          <Pressable onPress={() => router.push('/(tabs)/plan')}>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Today's Schedule</Text>
+          <Pressable
+            onPress={() => router.push('/(tabs)/plan')}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="View full planner agenda"
+            hitSlop={8}
+          >
             <Text style={[Typography.caption, { color: colors.orange, fontWeight: '600' }]}>Full Agenda →</Text>
           </Pressable>
         </View>
@@ -324,6 +338,9 @@ export default function HomeScreen() {
             <Pressable
               style={[styles.waterButton, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => handleAddWater(250)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 250 milliliters, one glass"
             >
               <Droplets size={18} color="#3B82F6" />
               <Text style={[Typography.button, { color: colors.ink, marginTop: 4 }]}>+250 ml</Text>
@@ -332,6 +349,9 @@ export default function HomeScreen() {
             <Pressable
               style={[styles.waterButton, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => handleAddWater(500)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 500 milliliters, one bottle"
             >
               <Droplets size={20} color="#3B82F6" />
               <Text style={[Typography.button, { color: colors.ink, marginTop: 4 }]}>+500 ml</Text>
@@ -340,6 +360,9 @@ export default function HomeScreen() {
             <Pressable
               style={[styles.waterButton, { backgroundColor: colors.surfaceMuted, borderColor: colors.line }]}
               onPress={() => handleAddWater(750)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Add 750 milliliters, large bottle"
             >
               <Droplets size={22} color="#3B82F6" />
               <Text style={[Typography.button, { color: colors.ink, marginTop: 4 }]}>+750 ml</Text>

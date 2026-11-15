@@ -319,6 +319,10 @@ export default function SettingsScreen() {
             <Switch
               value={mode === 'dark'}
               onValueChange={toggleTheme}
+              accessible={true}
+              accessibilityRole="switch"
+              accessibilityLabel="Dark mode switch"
+              accessibilityState={{ checked: mode === 'dark' }}
               trackColor={{ false: colors.surfaceMuted, true: colors.orange }}
               thumbColor={mode === 'dark' ? '#FFFFFF' : '#FFFFFF'}
             />
@@ -327,7 +331,7 @@ export default function SettingsScreen() {
 
         {/* Android System Notifications Section */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Android System Notifications</Text>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Android System Notifications</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
           <View style={styles.row}>
@@ -342,6 +346,10 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={remindersEnabled}
+              accessible={true}
+              accessibilityRole="switch"
+              accessibilityLabel="Upcoming to-do reminders switch"
+              accessibilityState={{ checked: remindersEnabled }}
               onValueChange={async (val) => {
                 setRemindersEnabled(val);
                 AppHaptics.selection();
@@ -438,6 +446,10 @@ export default function SettingsScreen() {
               {/* Test Notification Button */}
               <Pressable
                 style={[styles.testNotifBtn, { borderTopColor: colors.line, backgroundColor: colors.orangeSoft }]}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Test Android notification and chime"
+                hitSlop={6}
                 onPress={async () => {
                   AppHaptics.success();
                   const sent = await sendImmediateTestNotification();
@@ -558,6 +570,9 @@ export default function SettingsScreen() {
           <Pressable
             style={[styles.saveTargetsBtn, { backgroundColor: colors.orange, marginTop: Spacing.base }]}
             onPress={handleSaveTargets}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Save personal discipline targets"
           >
             <Save size={16} color="#FFFFFF" />
             <Text style={[Typography.button, { color: '#FFFFFF', marginLeft: 6 }]}>Save Targets</Text>
@@ -566,10 +581,16 @@ export default function SettingsScreen() {
 
         {/* Offline Backup & Restore Section */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Offline Data & Backup</Text>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Offline Data & Backup</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-          <Pressable style={[styles.actionRow, { borderBottomColor: colors.line }]} onPress={handleExportBackup}>
+          <Pressable
+            style={[styles.actionRow, { borderBottomColor: colors.line }]}
+            onPress={handleExportBackup}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Export JSON backup to device"
+          >
             <Download size={20} color={colors.orange} />
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={[Typography.bodyMedium, { color: colors.ink }]}>Export JSON Backup</Text>
@@ -579,7 +600,13 @@ export default function SettingsScreen() {
             </View>
           </Pressable>
 
-          <Pressable style={styles.actionRow} onPress={handleRestoreBackup}>
+          <Pressable
+            style={styles.actionRow}
+            onPress={handleRestoreBackup}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Restore JSON backup from file"
+          >
             <Upload size={20} color={colors.green} />
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
               <Text style={[Typography.bodyMedium, { color: colors.ink }]}>Restore JSON Backup</Text>
@@ -592,12 +619,15 @@ export default function SettingsScreen() {
 
         {/* Maintenance Section */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.base }]}>
-          <Text style={[Typography.sectionTitle, { color: colors.ink }]}>Database Management</Text>
+          <Text style={[Typography.sectionTitle, { color: colors.ink }]} accessibilityRole="header">Database Management</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
           <Pressable
             style={[styles.actionRow, { borderBottomColor: colors.line }]}
             onPress={() => setResetConfirmOpen(true)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Reload default schedule and timetable"
           >
             <RefreshCw size={20} color={colors.ink} />
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -611,6 +641,9 @@ export default function SettingsScreen() {
           <Pressable
             style={styles.actionRow}
             onPress={() => setClearConfirmOpen(true)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Clear all personal tracking logs"
           >
             <Trash2 size={20} color={colors.danger} />
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>

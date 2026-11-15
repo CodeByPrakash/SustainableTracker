@@ -21,14 +21,20 @@ export function SectionHeader({
 
   return (
     <View style={styles.container}>
-      <Text style={[Typography.sectionTitle, { color: colors.ink, flex: 1 }]}>
+      <Text
+        style={[Typography.sectionTitle, { color: colors.ink, flex: 1 }]}
+        accessibilityRole="header"
+      >
         {title}
       </Text>
       {actionLabel && onAction ? (
         <Pressable
           onPress={onAction}
-          hitSlop={8}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          hitSlop={12}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, minHeight: 44, justifyContent: 'center' })}
         >
           <Text style={[Typography.caption, { color: accent }]}>{actionLabel}</Text>
         </Pressable>

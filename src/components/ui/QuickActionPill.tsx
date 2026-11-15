@@ -23,6 +23,9 @@ export function QuickActionPill({
   return (
     <Pressable
       onPress={onPress}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.pill,
         {
@@ -53,5 +56,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
     borderWidth: 1,
+    minHeight: 44,
   },
 });
